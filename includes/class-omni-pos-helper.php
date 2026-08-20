@@ -40,11 +40,8 @@ class Omni_POS_Helper {
 			}
 		}
 
-		// 2. _global_unique_id meta
-		$global_id_meta = $product->get_meta( '_global_unique_id' );
-		if ( empty( $global_id_meta ) ) {
-			$global_id_meta = get_post_meta( $id, '_global_unique_id', true );
-		}
+		// 2. Direct postmeta fallback for custom barcode
+		$global_id_meta = get_post_meta( $id, '_global_unique_id', true );
 		if ( ! empty( $global_id_meta ) ) {
 			return (string) $global_id_meta;
 		}

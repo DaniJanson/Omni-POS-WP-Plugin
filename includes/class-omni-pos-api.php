@@ -297,7 +297,7 @@ class Omni_POS_API {
 
 			// Add Line Items
 			foreach ( $params['items'] as $item ) {
-				$product_id = (int) ( $item['variation_id'] ?: $item['id'] );
+				$product_id = ! empty( $item['variation_id'] ) ? (int) $item['variation_id'] : (int) $item['id'];
 				$product = wc_get_product( $product_id );
 				if ( ! $product ) {
 					continue;
@@ -322,7 +322,7 @@ class Omni_POS_API {
 			}
 
 			// Payment details
-			$payment_method = sanitize_text_field( $params['payment_method'] ?: 'cash' );
+			$payment_method = sanitize_text_field( ! empty( $params['payment_method'] ) ? $params['payment_method'] : 'cash' );
 			$payment_title  = '';
 
 			$all_gateways = ( function_exists( 'WC' ) && WC()->payment_gateways() ) ? WC()->payment_gateways()->payment_gateways() : array();
@@ -372,11 +372,11 @@ class Omni_POS_API {
 				'payment_method' => $payment_title,
 				'items'          => array(),
 				'subtotal'       => (float) $order->get_subtotal(),
-				'discount'       => (float) $params['discount_amount'] ?? 0,
+				'discount'       => isset( $params['discount_amount'] ) ? (float) $params['discount_amount'] : 0,
 				'tax'            => (float) $order->get_total_tax(),
 				'total'          => (float) $order->get_total(),
-				'tendered'       => (float) ( $params['tendered_cash'] ?? $order->get_total() ),
-				'change'         => (float) ( $params['change_due'] ?? 0 ),
+				'tendered'       => isset( $params['tendered_cash'] ) ? (float) $params['tendered_cash'] : (float) $order->get_total(),
+				'change'         => isset( $params['change_due'] ) ? (float) $params['change_due'] : 0,
 			);
 
 			foreach ( $order->get_items() as $line_item ) {

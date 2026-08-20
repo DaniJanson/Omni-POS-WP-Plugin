@@ -44,20 +44,37 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
     credentials: 'same-origin',
   });
 
+  const text = await response.text();
+
   if (!response.ok) {
     let errorMsg = `HTTP Error ${response.status}`;
     try {
-      const errJson = await response.json();
+      const errJson = JSON.parse(text);
       if (errJson.message) {
         errorMsg = errJson.message;
       }
     } catch {
-      // Ignore JSON parse errors
+      const stripped = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (stripped) {
+        errorMsg = stripped.length > 120 ? stripped.slice(0, 120) + '...' : stripped;
+      }
     }
     throw new Error(errorMsg);
   }
 
-  return response.json();
+  try {
+    return JSON.parse(text);
+  } catch {
+    const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch {
+        // Continue to throw below
+      }
+    }
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 export const posApi = {
