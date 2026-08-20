@@ -1,0 +1,8 @@
+node_modules/
+src-pos/node_modules/
+src-pos/dist/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

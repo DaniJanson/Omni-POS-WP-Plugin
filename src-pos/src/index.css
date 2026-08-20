@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  #root {
+    height: 100%;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  body {
+    @apply bg-slate-100 text-slate-900 dark:bg-[#0b0f19] dark:text-slate-100 font-sans antialiased overflow-hidden select-none transition-colors duration-200;
+  }
+}
+
+/* Custom modern thin scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.6);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.8);
+  border-radius: 9999px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.8);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 1);
+}
+
+/* Hide scrollbar for category pills */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Thermal Printer CSS Rules */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0mm !important;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    height: auto !important;
+    width: 80mm !important;
+    overflow: visible !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #omni-receipt-print-area,
+  #omni-receipt-print-area * {
+    visibility: visible;
+  }
+
+  #omni-receipt-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 3mm 2mm !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    background: #fff !important;
+    color: #000 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}

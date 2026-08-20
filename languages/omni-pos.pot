@@ -1,0 +1,385 @@
+# Copyright (C) 2026 Omni Dev Team
+# This file is distributed under the same license as the Omni POS plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Omni POS 1.0.0\n"
+"Report-Msgid-Bugs-To: https://omni.ge\n"
+"POT-Creation-Date: 2026-08-20 20:10+0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Loco Translate\n"
+"X-Domain: omni-pos\n"
+
+#: omni-pos.php:1
+msgid "Omni POS - Ultra Fast Point of Sale"
+msgstr ""
+
+#: omni-pos.php:1
+msgid "Lightweight, ultra-fast React + IndexedDB Point of Sale (POS) system for WooCommerce."
+msgstr ""
+
+#: omni-pos.php:48
+msgid "%s requires WooCommerce to be installed and active!"
+msgstr ""
+
+#: omni-pos.php:82
+msgid "POS Cashier"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:26
+msgid "Omni POS"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:36
+msgid "Settings"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:68
+msgid "Omni POS — Ultra Fast Point of Sale"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:70
+msgid "React + IndexedDB powered POS system for WooCommerce. Instant local barcode scanning, offline caching, and 80mm thermal receipt printing."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:74
+msgid "Open POS Register (Fullscreen)"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:79
+msgid "Local IndexedDB Cache"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:80
+msgid "Catalogue is cached in browser memory for instantaneous (<3ms) response."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:83
+msgid "Hardware Barcode Scanner"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:84
+msgid "Global key listener detects 1D/2D hand and presentation scanners."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:87
+msgid "80mm Thermal Receipt"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:88
+msgid "Custom print layout for standard POS thermal receipt printers."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:101
+msgid "Omni POS Settings"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:109
+msgid "Store Phone for Receipt"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:115
+msgid "Tax ID / Company Number"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:121
+msgid "Receipt Header Text"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:127
+msgid "Receipt Footer Text"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:133
+msgid "Auto Print Receipt"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:136
+msgid "Automatically trigger receipt print dialog upon successful checkout"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:141
+msgid "Sound Effects"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:144
+msgid "Enable audio beep for barcode scan and melodic chime on checkout"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:149
+msgid "Save Changes"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:159
+msgid "All"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:160
+msgid "Search products or scan barcode..."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:161
+msgid "Auto"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:162
+msgid "Loading products..."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:163
+msgid "No products found"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:164
+msgid "Try a different search query, change category, or sync catalogue from server."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:165
+msgid "Full Catalogue Sync"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:166
+msgid "units"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:167
+msgid "Out of Stock"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:168
+msgid "variations"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:169
+msgid "Customer"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:170
+msgid "Walk-in Customer (Guest)"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:171
+msgid "Clear Cart"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:172
+msgid "Cart is empty"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:173
+msgid "Scan a barcode or click a product to add to cart"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:174
+msgid "Subtotal"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:175
+msgid "Discount"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:176
+msgid "Add discount"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:177
+msgid "Total Payable"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:178
+msgid "Pay"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:179
+msgid "Payment Checkout"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:180
+msgid "Select payment method"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:181
+msgid "Payable Amount"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:182
+msgid "Cash"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:183
+msgid "Credit / Debit Card (POS)"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:184
+msgid "Split Payment"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:185
+msgid "Tendered Cash"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:186
+msgid "Exact"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:187
+msgid "Change Due:"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:188
+msgid "Order note (optional)"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:189
+msgid "e.g. Table 4, discount applied..."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:190
+msgid "Cancel"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:191
+msgid "Processing..."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:192
+msgid "Complete Payment"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:193
+msgid "Payment Successful!"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:194
+msgid "Print Receipt (80mm)"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:195
+msgid "New Sale"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:196
+msgid "Recent Orders History"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:197
+msgid "Completed sales list"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:198
+msgid "Order #"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:199
+msgid "Date"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:200
+msgid "Items"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:201
+msgid "Total"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:202
+msgid "Status"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:203
+msgid "Select Customer"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:204
+msgid "Attach customer to this sale"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:205
+msgid "Add New Customer"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:206
+msgid "First Name"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:207
+msgid "Last Name"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:208
+msgid "Phone Number"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:209
+msgid "Email"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:210
+msgid "Save & Select"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:211
+msgid "Back"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:212
+msgid "Syncing..."
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:213
+msgid "Sync Catalogue"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:214
+msgid "History"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:215
+msgid "Cashier"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:216
+msgid "Fullscreen"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:217
+msgid "Logout"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:218
+msgid "Offline Ready (IndexedDB)"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:219
+msgid "Catalogue synced successfully"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:220
+msgid "Sync error"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:221
+msgid "Added to cart"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:222
+msgid "Product not found with barcode"
+msgstr ""
+
+#: includes/class-omni-pos-admin.php:223
+msgid "Order created successfully!"
+msgstr ""
+
+#: includes/class-omni-pos-helper.php:220
+msgid "Thank you for your purchase!\nFast & Reliable Service"
+msgstr ""
+
+#: includes/class-omni-pos-helper.php:221
+msgid "Please keep this receipt for warranty and returns."
+msgstr ""
