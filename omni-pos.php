@@ -3,7 +3,7 @@
  * Plugin Name: Omni POS - Ultra Fast Point of Sale
  * Plugin URI: https://omni.ge
  * Description: Lightweight, ultra-fast React + IndexedDB Point of Sale (POS) system for WooCommerce.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Omni Dev Team
  * Author URI: https://omni.ge
  * Text Domain: omni-pos
@@ -20,10 +20,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-define( 'OMNI_POS_VERSION', '1.0.0' );
+define( 'OMNI_POS_VERSION', '1.0.1' );
 define( 'OMNI_POS_FILE', __FILE__ );
 define( 'OMNI_POS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'OMNI_POS_URL', plugin_dir_url( __FILE__ ) );
+
+/**
+ * Prevent PHPMailer fatal crash if mail() function is disabled in php.ini on server
+ */
+add_filter( 'pre_wp_mail', function( $null, $atts = array() ) {
+	if ( ! function_exists( 'mail' ) ) {
+		return false; // Safely bypass wp_mail instead of crashing with undefined function mail()
+	}
+	return $null;
+}, 1, 2 );
 
 /**
  * Declare HPOS (High-Performance Order Storage) and Cart/Checkout Blocks compatibility
@@ -62,8 +72,15 @@ function omni_pos_init() {
 
 	require_once OMNI_POS_PATH . 'includes/class-omni-pos-gateways.php';
 	require_once OMNI_POS_PATH . 'includes/class-omni-pos-helper.php';
+	require_once OMNI_POS_PATH . 'includes/class-omni-pos-i18n.php';
+	require_once OMNI_POS_PATH . 'includes/class-omni-pos-shifts.php';
+	require_once OMNI_POS_PATH . 'includes/class-omni-pos-suppliers.php';
+	require_once OMNI_POS_PATH . 'includes/class-omni-pos-updater.php';
 	require_once OMNI_POS_PATH . 'includes/class-omni-pos-api.php';
 	require_once OMNI_POS_PATH . 'includes/class-omni-pos-admin.php';
+
+	// Init Updater
+	Omni_POS_Updater::instance();
 
 	// Init REST API
 	Omni_POS_API::init();
@@ -74,7 +91,7 @@ function omni_pos_init() {
 add_action( 'plugins_loaded', 'omni_pos_init' );
 
 /**
- * Activation Hook - add custom cashier role and flush rewrite rules
+ * Activation Hook - add custom cashier role, create tables and flush rewrite rules
  */
 register_activation_hook( __FILE__, function() {
 	// Add Cashier role if not exists
@@ -88,6 +105,13 @@ register_activation_hook( __FILE__, function() {
 		'edit_shop_orders'      => true,
 		'read_shop_orders'      => true,
 	) );
+
+	// Create shift and suppliers database tables
+	require_once plugin_dir_path( __FILE__ ) . 'includes/class-omni-pos-shifts.php';
+	Omni_POS_Shifts::init_db();
+
+	require_once plugin_dir_path( __FILE__ ) . 'includes/class-omni-pos-suppliers.php';
+	Omni_POS_Suppliers::init_db();
 
 	// Flush rewrite rules for custom REST API
 	flush_rewrite_rules();

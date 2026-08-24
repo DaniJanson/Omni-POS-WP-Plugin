@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePosStore } from './store/usePosStore';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { PosHeader } from './components/PosHeader';
@@ -10,6 +10,11 @@ import { OrdersModal } from './components/OrdersModal';
 import { CustomerModal } from './components/CustomerModal';
 import { SyncProgressModal } from './components/SyncProgressModal';
 import { NotificationToast } from './components/NotificationToast';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { OpenShiftModal } from './components/shifts/OpenShiftModal';
+import { CloseShiftModal } from './components/shifts/CloseShiftModal';
+import { ResumeShiftModal } from './components/shifts/ResumeShiftModal';
+import { CashMovementModal } from './components/shifts/CashMovementModal';
 import { RefreshCw, Zap } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -18,12 +23,59 @@ export const App: React.FC = () => {
     isLoadingInit,
     handleBarcodeScan,
     initData,
+    activeView,
+    setActiveView,
+    adminSettings,
+    currentShift,
+    fetchCurrentShift,
+    setCurrentShift,
+    isOpenShiftModalOpen,
+    setIsOpenShiftModalOpen,
+    isCloseShiftModalOpen,
+    setIsCloseShiftModalOpen,
+    isCashMovementModalOpen,
+    setIsCashMovementModalOpen,
   } = usePosStore();
 
-  // 1. Hardware Barcode Scanner integration (Global listener)
+  const isDirectControl = (adminSettings?.inventory_mode || window.omniPosConfig?.inventoryMode) === 'omni_pos';
+
+  // Shift resume state on session start
+  const [isResumeShiftModalOpen, setIsResumeShiftModalOpen] = useState(false);
+  const [hasCheckedShiftSession, setHasCheckedShiftSession] = useState(false);
+
+  // Enforce redirection to POS register if in WooCommerce Standard mode
+  useEffect(() => {
+    if (activeView === 'admin' && !isDirectControl) {
+      setActiveView('pos');
+      if (window.location.search.includes('view=admin')) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+    }
+  }, [activeView, isDirectControl, setActiveView]);
+
+  // Check shift status when entering POS Terminal (only in Direct Control mode)
+  useEffect(() => {
+    if (activeView === 'pos' && isDirectControl && !hasCheckedShiftSession && !isLoadingInit && initData) {
+      setHasCheckedShiftSession(true);
+      fetchCurrentShift().then((shift) => {
+        if (shift && shift.status === 'open') {
+          // Previously opened shift is still active -> ask cashier if they want to continue or close & start new
+          setIsResumeShiftModalOpen(true);
+        } else {
+          // No open shift -> prompt to open register shift
+          setIsOpenShiftModalOpen(true);
+        }
+      });
+    }
+  }, [activeView, isDirectControl, hasCheckedShiftSession, isLoadingInit, initData, fetchCurrentShift]);
+
+  // 1. Hardware Barcode Scanner integration (Global listener active during POS mode)
   useBarcodeScanner({
     onScan: (barcode) => {
-      handleBarcodeScan(barcode);
+      if (activeView === 'pos') {
+        handleBarcodeScan(barcode);
+      }
     },
     maxDelay: initData?.settings.barcode_delay || 50,
   });
@@ -48,6 +100,17 @@ export const App: React.FC = () => {
     );
   }
 
+  // 3. Render Dedicated Standalone Admin Hub (Only in Direct Control Mode)
+  if (activeView === 'admin' && isDirectControl) {
+    return (
+      <>
+        <AdminLayout />
+        <NotificationToast />
+      </>
+    );
+  }
+
+  // 4. Render POS Register
   return (
     <div className="h-screen w-screen flex flex-col bg-[#0b0f19] overflow-hidden">
       {/* Top Header */}
@@ -66,8 +129,59 @@ export const App: React.FC = () => {
       <CustomerModal />
       <SyncProgressModal />
       <NotificationToast />
+
+      {/* Shift Flow Modals */}
+      {isDirectControl && (
+        <>
+          {/* Ask to continue active shift or close it */}
+          <ResumeShiftModal
+            isOpen={isResumeShiftModalOpen}
+            shift={currentShift}
+            onContinue={() => {
+              setIsResumeShiftModalOpen(false);
+            }}
+            onCloseAndStartNew={() => {
+              setIsResumeShiftModalOpen(false);
+              setIsCloseShiftModalOpen(true);
+            }}
+          />
+
+          {/* Open Shift Modal */}
+          <OpenShiftModal
+            isOpen={isOpenShiftModalOpen}
+            onClose={() => setIsOpenShiftModalOpen(false)}
+            onShiftOpened={(shift) => {
+              setCurrentShift(shift);
+              setIsOpenShiftModalOpen(false);
+            }}
+          />
+
+          {/* Close Shift Modal */}
+          <CloseShiftModal
+            isOpen={isCloseShiftModalOpen}
+            onClose={() => setIsCloseShiftModalOpen(false)}
+            shift={currentShift}
+            onShiftClosed={() => {
+              setCurrentShift(null);
+              setIsCloseShiftModalOpen(false);
+              // Prompt to open new shift
+              setIsOpenShiftModalOpen(true);
+            }}
+          />
+
+          {/* Cash In / Cash Out Movement Modal */}
+          <CashMovementModal
+            isOpen={isCashMovementModalOpen}
+            onClose={() => setIsCashMovementModalOpen(false)}
+            onMovementLogged={(updatedShift) => {
+              setCurrentShift(updatedShift);
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };
 
 export default App;
+

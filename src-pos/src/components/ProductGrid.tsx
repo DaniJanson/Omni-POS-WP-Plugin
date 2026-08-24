@@ -2,7 +2,7 @@ import React from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { ProductCard } from './ProductCard';
 import { t } from '../utils/i18n';
-import { Search, X, Barcode, Grid, RefreshCw } from 'lucide-react';
+import { Search, X, Barcode, Grid, RefreshCw, Lock, Coins } from 'lucide-react';
 
 export const ProductGrid: React.FC = () => {
   const {
@@ -15,9 +15,14 @@ export const ProductGrid: React.FC = () => {
     handleBarcodeScan,
     isProductsLoading,
     syncCatalog,
+    currentShift,
+    adminSettings,
+    setIsOpenShiftModalOpen,
   } = usePosStore();
 
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const isDirectControl = (adminSettings?.inventory_mode || window.omniPosConfig?.inventoryMode) === 'omni_pos';
+  const isShiftLocked = isDirectControl && (!currentShift || currentShift.status !== 'open');
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -29,9 +34,11 @@ export const ProductGrid: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-100 dark:bg-[#0b0f19] overflow-hidden transition-colors">
+    <div className="flex-1 flex flex-col h-full bg-slate-100 dark:bg-[#0b0f19] overflow-hidden transition-colors relative">
       {/* Top Search & Filter Bar */}
-      <div className="p-3.5 border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0f172a]/70 backdrop-blur-md flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      <div className={`p-3.5 border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0f172a]/70 backdrop-blur-md flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between transition-all ${
+        isShiftLocked ? 'opacity-40 pointer-events-none' : ''
+      }`}>
         {/* Search & Barcode Input */}
         <div className="relative flex-1 max-w-lg">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -40,11 +47,12 @@ export const ProductGrid: React.FC = () => {
           <input
             ref={searchInputRef}
             type="text"
+            disabled={isShiftLocked}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('search_placeholder', 'Search products or scan barcode...')}
-            className="w-full pl-9 pr-24 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-inner transition-colors"
+            className="w-full pl-9 pr-24 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-inner transition-colors disabled:cursor-not-allowed"
           />
           <div className="absolute inset-y-0 right-0 pr-2 flex items-center space-x-1.5">
             {searchQuery && (
@@ -94,7 +102,9 @@ export const ProductGrid: React.FC = () => {
       </div>
 
       {/* Products Grid Content */}
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <div className={`flex-1 overflow-y-auto p-4 custom-scrollbar relative transition-all ${
+        isShiftLocked ? 'opacity-30 filter blur-[1.5px] pointer-events-none select-none' : ''
+      }`}>
         {isProductsLoading ? (
           <div className="h-full flex items-center justify-center">
             <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 text-sm">
@@ -127,6 +137,33 @@ export const ProductGrid: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Shift Locked Overlay */}
+      {isShiftLocked && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-[2px] animate-fadeIn select-none">
+          <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-4 ring-1 ring-black/5 dark:ring-white/10 animate-scaleIn">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto border border-amber-200 dark:border-amber-500/20 shadow-lg shadow-amber-500/10">
+              <Lock className="w-8 h-8" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                {t('register_shift_locked', 'Register Shift is Closed')}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                {t('register_shift_locked_desc', 'Product sales are locked. Open a register shift with opening float to begin scanning and selling.')}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOpenShiftModalOpen(true)}
+              className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider shadow-xl shadow-emerald-600/30 flex items-center justify-center space-x-2 transition-all cursor-pointer"
+            >
+              <Coins className="w-4 h-4" />
+              <span>{t('open_shift_to_sell', 'Open Register Shift')}</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

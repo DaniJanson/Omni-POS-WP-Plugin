@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { db } from '../db';
 import { posApi } from '../services/api';
+import { qzClient } from '../services/qzClient';
+import { EscPosBuilder } from '../services/escpos';
 import { sound } from '../utils/sound';
 import { t } from '../utils/i18n';
 import type {
@@ -12,6 +14,10 @@ import type {
   PosInitData,
   ReceiptData,
   PaymentDetails,
+  AppView,
+  AdminTab,
+  AdminDashboardStats,
+  AdminSettings,
 } from '../types';
 
 interface SyncProgress {
@@ -43,6 +49,14 @@ interface PosState {
   orderDiscountAmount: number;
   orderNote: string;
 
+  // Views & Navigation
+  activeView: AppView;
+  adminActiveTab: AdminTab;
+  adminStats: AdminDashboardStats | null;
+  adminSettings: AdminSettings | null;
+  isAdminLoading: boolean;
+  currentShift: import('../types').PosShift | null;
+
   // Modals & UI state
   isPaymentModalOpen: boolean;
   isReceiptModalOpen: boolean;
@@ -53,6 +67,33 @@ interface PosState {
   syncProgress: SyncProgress | null;
   notification: NotificationState | null;
   theme: 'dark' | 'light';
+
+  // Navigation & View Actions
+  setActiveView: (view: AppView) => void;
+  setAdminActiveTab: (tab: AdminTab) => void;
+  fetchAdminDashboard: () => Promise<void>;
+  fetchAdminSettings: () => Promise<void>;
+  saveAdminSettings: (settings: Partial<AdminSettings>) => Promise<boolean>;
+  fetchCurrentShift: () => Promise<import('../types').PosShift | null>;
+  setCurrentShift: (shift: import('../types').PosShift | null) => void;
+
+  // Translations & Language
+  currentLanguage: string;
+  languages: import('../types').LanguageOption[];
+  translations: Record<string, string>;
+  customTranslations: Record<string, string>;
+  defaultStrings: Record<string, import('../types').DefaultStringItem>;
+  fetchTranslations: (lang?: string) => Promise<void>;
+  saveTranslations: (lang: string, custom: Record<string, string>) => Promise<boolean>;
+  setLanguage: (lang: string) => Promise<void>;
+
+  // Updates
+  updateInfo: import('../types').UpdateCheckResult | null;
+  isCheckingUpdates: boolean;
+  isInstallingUpdate: boolean;
+  checkForUpdates: (force?: boolean) => Promise<import('../types').UpdateCheckResult | null>;
+  saveUpdateSettings: (repo: string, token?: string) => Promise<boolean>;
+  installPluginUpdate: () => Promise<boolean>;
 
   // Actions
   initialize: () => Promise<void>;
@@ -80,11 +121,49 @@ interface PosState {
   openPaymentModal: () => void;
   closePaymentModal: () => void;
   completeCheckout: (payment: PaymentDetails) => Promise<boolean>;
+  openReceiptModal: (receipt: ReceiptData) => void;
   closeReceiptModal: () => void;
   setOrdersModalOpen: (open: boolean) => void;
   setCustomerModalOpen: (open: boolean) => void;
+  isOpenShiftModalOpen: boolean;
+  setIsOpenShiftModalOpen: (open: boolean) => void;
+  isCloseShiftModalOpen: boolean;
+  setIsCloseShiftModalOpen: (open: boolean) => void;
+  isCashMovementModalOpen: boolean;
+  setIsCashMovementModalOpen: (open: boolean) => void;
   showNotification: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
+
+const getInitialUrlState = () => {
+  if (typeof window === 'undefined') {
+    return {
+      view: 'pos' as AppView,
+      tab: 'dashboard' as AdminTab,
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const viewParam = params.get('view');
+  const tabParam = params.get('tab');
+  const isDirectControl = window.omniPosConfig?.inventoryMode === 'omni_pos';
+  const isAdmin = window.omniPosConfig?.isAdmin;
+  const initialView = window.omniPosConfig?.initialView;
+  const initialTab = window.omniPosConfig?.initialTab;
+
+  let view: AppView = 'pos';
+  if ((viewParam === 'admin' || initialView === 'admin') && isDirectControl && isAdmin) {
+    view = 'admin';
+  }
+
+  const validTabs: AdminTab[] = ['dashboard', 'orders', 'suppliers', 'products', 'shifts', 'cashiers', 'reports', 'customers', 'translations', 'migration', 'settings'];
+  const tab: AdminTab = validTabs.includes((tabParam || initialTab) as AdminTab)
+    ? ((tabParam || initialTab) as AdminTab)
+    : 'dashboard';
+
+  return { view, tab };
+};
+
+const initialUrlState = getInitialUrlState();
 
 export const usePosStore = create<PosState>((set, get) => ({
   initData: null,
@@ -100,15 +179,243 @@ export const usePosStore = create<PosState>((set, get) => ({
   orderDiscountAmount: 0,
   orderNote: '',
 
+  // Views & Admin
+  activeView: initialUrlState.view,
+  adminActiveTab: initialUrlState.tab,
+  adminStats: null,
+  adminSettings: null,
+  isAdminLoading: false,
+
+  currentShift: null,
   isPaymentModalOpen: false,
   isReceiptModalOpen: false,
   lastReceipt: null,
   isOrdersModalOpen: false,
   isCustomerModalOpen: false,
+  isOpenShiftModalOpen: false,
+  isCloseShiftModalOpen: false,
+  isCashMovementModalOpen: false,
   isSyncing: false,
   syncProgress: null,
   notification: null,
   theme: (typeof window !== 'undefined' && localStorage.getItem('omni_pos_theme') === 'light') ? 'light' : 'dark',
+
+  setActiveView: (view: AppView) => {
+    set({ activeView: view });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (view === 'admin') {
+        url.searchParams.set('view', 'admin');
+        url.searchParams.set('tab', get().adminActiveTab || 'dashboard');
+        get().fetchAdminDashboard();
+        get().fetchAdminSettings();
+      } else {
+        url.searchParams.delete('view');
+        url.searchParams.delete('tab');
+      }
+      window.history.pushState({}, '', url.pathname + url.search);
+    }
+  },
+
+  setAdminActiveTab: (tab: AdminTab) => {
+    set({ adminActiveTab: tab });
+    if (typeof window !== 'undefined' && get().activeView === 'admin') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('view', 'admin');
+      url.searchParams.set('tab', tab);
+      window.history.pushState({}, '', url.pathname + url.search);
+    }
+  },
+
+  setCurrentShift: (shift: import('../types').PosShift | null) => {
+    set({ currentShift: shift });
+  },
+
+  fetchCurrentShift: async () => {
+    try {
+      const resp = await posApi.getCurrentShift();
+      if (resp.success) {
+        set({ currentShift: resp.shift });
+        return resp.shift;
+      }
+      return null;
+    } catch (err: any) {
+      console.error('Fetch Current Shift Error:', err);
+      return null;
+    }
+  },
+
+  fetchAdminDashboard: async () => {
+    set({ isAdminLoading: true });
+    try {
+      const resp = await posApi.getAdminDashboard();
+      if (resp.success && resp.stats) {
+        set({ adminStats: resp.stats, isAdminLoading: false });
+      }
+    } catch (err: any) {
+      console.error('Fetch Admin Dashboard Error:', err);
+      set({ isAdminLoading: false });
+    }
+  },
+
+  fetchAdminSettings: async () => {
+    try {
+      const resp = await posApi.getAdminSettings();
+      if (resp.success && resp.settings) {
+        set({ adminSettings: resp.settings });
+      }
+    } catch (err: any) {
+      console.error('Fetch Admin Settings Error:', err);
+    }
+  },
+
+  saveAdminSettings: async (settings: Partial<AdminSettings>) => {
+    try {
+      const resp = await posApi.updateAdminSettings(settings);
+      if (resp.success && resp.settings) {
+        set({ adminSettings: resp.settings });
+        sound.setEnabled(resp.settings.sound_effects);
+        get().showNotification(t('settings_saved', 'Settings saved successfully!'), 'success');
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      sound.playError();
+      get().showNotification(t('error_saving_settings', 'Failed to save settings') + ': ' + (err.message || 'Error'), 'error');
+      return false;
+    }
+  },
+
+  // Translation State
+  currentLanguage: 'auto',
+  languages: [
+    { code: 'auto', label: 'Auto (WordPress Default)', flag: '🌐' },
+    { code: 'ka_GE', label: 'ქართული (Georgian)', flag: '🇬🇪' },
+    { code: 'en_US', label: 'English (US)', flag: '🇺🇸' },
+    { code: 'de_DE', label: 'Deutsch (German)', flag: '🇩🇪' },
+    { code: 'es_ES', label: 'Español (Spanish)', flag: '🇪🇸' },
+    { code: 'fr_FR', label: 'Français (French)', flag: '🇫🇷' },
+    { code: 'ru_RU', label: 'Русский (Russian)', flag: '🇷🇺' },
+  ],
+  translations: (typeof window !== 'undefined' && window.omniPosConfig?.i18n) || {},
+  customTranslations: {},
+  defaultStrings: {},
+
+  fetchTranslations: async (lang?: string) => {
+    try {
+      const resp = await posApi.getTranslations(lang);
+      if (resp.success) {
+        set({
+          languages: resp.languages || get().languages,
+          currentLanguage: resp.active_language || 'auto',
+          defaultStrings: resp.default_strings || {},
+          customTranslations: resp.custom_translations || {},
+          translations: resp.resolved_translations || {},
+        });
+      }
+    } catch (err: any) {
+      console.error('Fetch Translations Error:', err);
+    }
+  },
+
+  setLanguage: async (lang: string) => {
+    try {
+      set({ currentLanguage: lang });
+      if (lang === 'en_US') {
+        const enDict: Record<string, string> = {};
+        Object.entries(get().defaultStrings).forEach(([k, v]) => {
+          enDict[k] = v.en || k;
+        });
+        if (Object.keys(enDict).length > 0) {
+          set({ translations: enDict });
+        }
+      }
+
+      const resp = await posApi.saveTranslations(lang, get().customTranslations);
+      if (resp.success) {
+        set({
+          translations: resp.resolved_translations || {},
+          customTranslations: resp.custom_translations || {},
+          currentLanguage: resp.active_language || lang,
+        });
+        get().showNotification(lang === 'en_US' ? 'Language switched to English!' : 'ენა წარმატებით შეიცვალა!', 'success');
+      }
+    } catch (err: any) {
+      console.error('Set Language Error:', err);
+    }
+  },
+
+  saveTranslations: async (lang: string, custom: Record<string, string>) => {
+    try {
+      const resp = await posApi.saveTranslations(lang, custom);
+      if (resp.success) {
+        set({
+          translations: resp.resolved_translations,
+          customTranslations: resp.custom_translations,
+          currentLanguage: resp.active_language,
+        });
+        get().showNotification(resp.message || 'Translations saved successfully!', 'success');
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      get().showNotification('Failed to save translations: ' + (err.message || 'Error'), 'error');
+      return false;
+    }
+  },
+
+  // Updates State & Actions
+  updateInfo: null,
+  isCheckingUpdates: false,
+  isInstallingUpdate: false,
+
+  checkForUpdates: async (force = false) => {
+    set({ isCheckingUpdates: true });
+    try {
+      const info = await posApi.checkUpdates(force);
+      set({ updateInfo: info, isCheckingUpdates: false });
+      return info;
+    } catch (err: any) {
+      console.warn('Check Updates Error:', err);
+      set({ isCheckingUpdates: false });
+      return null;
+    }
+  },
+
+  saveUpdateSettings: async (repo: string, token = '') => {
+    try {
+      const resp = await posApi.saveUpdateSettings(repo, token);
+      if (resp.success) {
+        set({ updateInfo: resp.update });
+        get().showNotification(resp.message || 'Repo settings saved!', 'success');
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      get().showNotification('Error saving repo: ' + (err.message || 'Failed'), 'error');
+      return false;
+    }
+  },
+
+  installPluginUpdate: async () => {
+    set({ isInstallingUpdate: true });
+    try {
+      const resp = await posApi.installUpdate();
+      set({ isInstallingUpdate: false });
+      if (resp.success) {
+        get().showNotification(resp.message || 'Update completed successfully! Reloading...', 'success');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      set({ isInstallingUpdate: false });
+      get().showNotification('Installation Failed: ' + (err.message || 'Error'), 'error');
+      return false;
+    }
+  },
 
   toggleTheme: () => {
     const current = get().theme;
@@ -131,59 +438,84 @@ export const usePosStore = create<PosState>((set, get) => ({
   },
 
   initialize: async () => {
+    // 0. Sync URL popstate
+    if (typeof window !== 'undefined' && !(window as any).__omni_pos_popstate_attached) {
+      (window as any).__omni_pos_popstate_attached = true;
+      window.addEventListener('popstate', () => {
+        const state = getInitialUrlState();
+        set({ activeView: state.view, adminActiveTab: state.tab });
+      });
+    }
+
     // Apply theme on load
     const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('omni_pos_theme') === 'light') ? 'light' : 'dark';
     get().setTheme(savedTheme);
-    set({ isLoadingInit: true });
+
+    // If initial view is admin, eagerly fetch dashboard and settings
+    if (initialUrlState.view === 'admin') {
+      get().fetchAdminDashboard();
+      get().fetchAdminSettings();
+    }
+
     try {
-      // 1. Load cached init data from Dexie first for instant launch
-      const cachedInit = await db.getInitData();
+      // 1. INSTANT HYDRATION (< 10ms): Load cached init, categories and local products from IndexedDB immediately
+      const [cachedInit, cachedCats] = await Promise.all([
+        db.getInitData(),
+        db.categories.toArray(),
+      ]);
+
       if (cachedInit) {
-        set({ initData: cachedInit, isLoadingInit: false });
-        sound.setEnabled(cachedInit.settings.sound_effects);
+        set({
+          initData: cachedInit,
+          isLoadingInit: false,
+          categories: cachedCats || [],
+          customer: {
+            id: 0,
+            name: t('walk_in_customer', 'Walk-in Customer (Guest)'),
+            email: '',
+            phone: '',
+            first_name: 'Walk-in',
+            last_name: 'Customer',
+          },
+        });
+        sound.setEnabled(cachedInit.settings?.sound_effects ?? true);
       }
 
-      // 2. Fetch fresh init data from backend
-      const freshInit = await posApi.getInitData();
-      await db.saveInitData(freshInit);
-      sound.setEnabled(freshInit.settings.sound_effects);
+      // Render local products immediately to screen
+      await get().loadLocalProducts();
 
-      set({
-        initData: freshInit,
-        isLoadingInit: false,
-        customer: {
-          id: 0,
-          name: t('walk_in_customer', 'Walk-in Customer (Guest)'),
-          email: '',
-          phone: '',
-          first_name: 'Walk-in',
-          last_name: 'Customer',
-        },
-      });
+      // 2. BACKGROUND NON-BLOCKING REFRESH: Fetch fresh init data & categories in parallel
+      Promise.allSettled([
+        posApi.getInitData(),
+        posApi.getCategories(),
+      ]).then(async ([initResult, catsResult]) => {
+        if (initResult.status === 'fulfilled' && initResult.value) {
+          const freshInit = initResult.value;
+          await db.saveInitData(freshInit);
+          sound.setEnabled(freshInit.settings?.sound_effects ?? true);
+          set({ initData: freshInit, isLoadingInit: false });
+        } else {
+          set({ isLoadingInit: false });
+        }
 
-      // 3. Load categories from API & save to Dexie
-      try {
-        const cats = await posApi.getCategories();
-        if (cats?.length) {
+        if (catsResult.status === 'fulfilled' && catsResult.value?.length) {
+          const cats = catsResult.value;
           await db.categories.clear();
           await db.categories.bulkPut(cats);
           set({ categories: cats });
         }
-      } catch {
-        const cachedCats = await db.categories.toArray();
-        set({ categories: cachedCats });
-      }
+      });
 
-      // 4. Load local products immediately (<2ms)
-      await get().loadLocalProducts();
-
-      // 5. Non-blocking background sync
+      // 3. BACKGROUND CATALOG DELTA SYNC: Fast chunking with batch size 500
       const localCount = await db.getProductsCount();
       get().syncCatalog(localCount === 0);
+
+      // 4. BACKGROUND UPDATE CHECK: Check GitHub releases
+      get().checkForUpdates();
     } catch (err: any) {
       console.error('POS Init Error:', err);
-      get().showNotification(t('sync_error', 'Connection error') + ': ' + (err.message || 'Error'), 'error');
       set({ isLoadingInit: false });
+      await get().loadLocalProducts();
     }
   },
 
@@ -201,9 +533,10 @@ export const usePosStore = create<PosState>((set, get) => ({
       let page = 1;
       let totalPages = 1;
       let totalFetched = 0;
+      const CHUNK_SIZE = 500; // Ultra-fast 500-product batching
 
       do {
-        const resp = await posApi.getProducts(page, 100, updatedAfter);
+        const resp = await posApi.getProducts(page, CHUNK_SIZE, updatedAfter);
         totalPages = resp.total_pages || 1;
 
         if (resp.products?.length) {
@@ -213,7 +546,7 @@ export const usePosStore = create<PosState>((set, get) => ({
           await db.products.bulkPut(resp.products);
           totalFetched += resp.products.length;
 
-          // Progressively render Page 1 immediately for instant (<0.1s) user feedback
+          // Progressively render Page 1 immediately for instant (<0.05s) user feedback
           if (page === 1 || get().products.length === 0) {
             get().loadLocalProducts();
           }
@@ -255,6 +588,15 @@ export const usePosStore = create<PosState>((set, get) => ({
   },
 
   addToCart: (product: Product, variation?: ProductVariation, qty: number = 1) => {
+    const { currentShift, adminSettings } = get();
+    const isDirectControl = (adminSettings?.inventory_mode || window.omniPosConfig?.inventoryMode) === 'omni_pos';
+    if (isDirectControl && (!currentShift || currentShift.status !== 'open')) {
+      sound.playError();
+      get().showNotification(t('shift_required_prompt', 'Please open a register shift before scanning or selling products!'), 'error');
+      set({ isOpenShiftModalOpen: true });
+      return;
+    }
+
     sound.playScanBeep();
     const cart = [...get().cart];
     const cartId = variation ? `var_${variation.id}` : `prod_${product.id}`;
@@ -332,6 +674,15 @@ export const usePosStore = create<PosState>((set, get) => ({
     if (!barcode) return false;
     const clean = barcode.trim();
 
+    const { currentShift, adminSettings } = get();
+    const isDirectControl = (adminSettings?.inventory_mode || window.omniPosConfig?.inventoryMode) === 'omni_pos';
+    if (isDirectControl && (!currentShift || currentShift.status !== 'open')) {
+      sound.playError();
+      get().showNotification(t('shift_required_prompt', 'Please open a register shift before scanning or selling products!'), 'error');
+      set({ isOpenShiftModalOpen: true });
+      return false;
+    }
+
     // 1. Look up in IndexedDB first (< 5ms)
     let product = await db.findByBarcode(clean);
 
@@ -366,6 +717,15 @@ export const usePosStore = create<PosState>((set, get) => ({
   },
 
   openPaymentModal: () => {
+    const { currentShift, adminSettings } = get();
+    const isDirectControl = (adminSettings?.inventory_mode || window.omniPosConfig?.inventoryMode) === 'omni_pos';
+    if (isDirectControl && (!currentShift || currentShift.status !== 'open')) {
+      sound.playError();
+      get().showNotification(t('shift_required_prompt', 'Please open a register shift before scanning or selling products!'), 'error');
+      set({ isOpenShiftModalOpen: true });
+      return;
+    }
+
     if (get().cart.length === 0) {
       get().showNotification(t('cart_empty', 'Cart is empty'), 'error');
       return;
@@ -407,16 +767,40 @@ export const usePosStore = create<PosState>((set, get) => ({
 
       if (result.success && result.receipt) {
         sound.playSuccessChime();
+        const settings = initData?.settings;
+        const receiptPrinter = settings?.receipt_printer;
+        const isSilentPrint = settings?.silent_print !== false;
+
+        // Try QZ Tray Silent Direct Thermal Print & Cash Drawer Kick
+        let printedSilently = false;
+        if (qzClient.isConnected() && receiptPrinter && isSilentPrint) {
+          try {
+            const rawEscPos = EscPosBuilder.buildReceipt(result.receipt as any, initData?.store, {
+              kickDrawer: payment.method === 'cash' && settings?.cash_drawer_kick !== false,
+              autoCut: settings?.auto_paper_cut !== false,
+              receiptHeader: settings?.receipt_header,
+              receiptFooter: settings?.receipt_footer,
+            });
+            await qzClient.printRaw(receiptPrinter, rawEscPos);
+            printedSilently = true;
+          } catch (printErr) {
+            console.warn('Silent QZ print failed, falling back to modal:', printErr);
+          }
+        }
+
         set({
           isPaymentModalOpen: false,
           lastReceipt: result.receipt,
-          isReceiptModalOpen: true,
+          isReceiptModalOpen: !printedSilently,
           cart: [],
           orderDiscountAmount: 0,
           orderNote: '',
         });
 
-        if (initData?.settings.auto_print) {
+        // Live refresh shift sales and drawer balance
+        get().fetchCurrentShift();
+
+        if (!printedSilently && initData?.settings.auto_print) {
           setTimeout(() => {
             window.print();
           }, 300);
@@ -433,6 +817,10 @@ export const usePosStore = create<PosState>((set, get) => ({
     }
   },
 
+  openReceiptModal: (receipt: ReceiptData) => {
+    set({ lastReceipt: receipt, isReceiptModalOpen: true });
+  },
+
   closeReceiptModal: () => {
     set({ isReceiptModalOpen: false, lastReceipt: null });
   },
@@ -443,6 +831,18 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   setCustomerModalOpen: (open: boolean) => {
     set({ isCustomerModalOpen: open });
+  },
+
+  setIsOpenShiftModalOpen: (open: boolean) => {
+    set({ isOpenShiftModalOpen: open });
+  },
+
+  setIsCloseShiftModalOpen: (open: boolean) => {
+    set({ isCloseShiftModalOpen: open });
+  },
+
+  setIsCashMovementModalOpen: (open: boolean) => {
+    set({ isCashMovementModalOpen: open });
   },
 
   showNotification: (message: string, type: 'success' | 'error' | 'info' = 'info') => {

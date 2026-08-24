@@ -40,10 +40,17 @@ class Omni_POS_Admin {
 	}
 
 	/**
-	 * Get clean direct URL for POS
+	 * Get clean direct URL for POS Register
 	 */
 	public static function get_pos_url() {
 		return home_url( '/omni_pos' );
+	}
+
+	/**
+	 * Get clean direct URL for Omni POS Standalone Admin Hub
+	 */
+	public static function get_admin_hub_url() {
+		return home_url( '/omni_pos?view=admin' );
 	}
 
 	/**
@@ -125,53 +132,66 @@ class Omni_POS_Admin {
 	 * Register settings fields with explicit sanitization callbacks
 	 */
 	public static function register_settings() {
+		register_setting( 'omni_pos_settings_group', 'omni_pos_inventory_mode', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'omni_pos_settings_group', 'omni_pos_store_phone', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'omni_pos_settings_group', 'omni_pos_store_tax_id', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'omni_pos_settings_group', 'omni_pos_receipt_header', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'omni_pos_settings_group', 'omni_pos_receipt_footer', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'omni_pos_settings_group', 'omni_pos_auto_print', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'omni_pos_settings_group', 'omni_pos_sound_effects', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'omni_pos_settings_group', 'omni_pos_low_stock_threshold', array( 'sanitize_callback' => 'absint' ) );
+		register_setting( 'omni_pos_settings_group', 'omni_pos_enable_discounts', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'omni_pos_settings_group', 'omni_pos_enable_custom_price', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 	}
 
 	/**
 	 * Render Launcher Dashboard Page
 	 */
 	public static function render_admin_page() {
-		$launch_url = self::get_pos_url();
+		$launch_url   = self::get_pos_url();
+		$admin_hub_url = self::get_admin_hub_url();
+		$inventory_mode = get_option( 'omni_pos_inventory_mode', 'woocommerce' );
 		?>
-		<div class="wrap" style="max-width: 900px; margin-top: 30px;">
-			<div style="background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; text-align: center;">
-				<div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; margin-bottom: 20px; font-size: 30px;">
-					🏪
+		<div class="wrap" style="max-width: 960px; margin-top: 30px;">
+			<div style="background: #ffffff; border-radius: 16px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; text-align: center;">
+				<div style="display: inline-flex; align-items: center; justify-content: center; width: 68px; height: 68px; border-radius: 20px; background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; margin-bottom: 20px; font-size: 32px; box-shadow: 0 8px 24px rgba(37,99,235,0.3);">
+					⚡
 				</div>
-				<h1 style="font-size: 28px; font-weight: 700; color: #1e293b; margin: 0 0 10px 0;"><?php esc_html_e( 'Omni POS — Ultra Fast Point of Sale', 'omni-pos' ); ?></h1>
-				<p style="font-size: 16px; color: #64748b; margin-bottom: 24px; max-width: 600px; margin-left: auto; margin-right: auto;">
-					<?php esc_html_e( 'React + IndexedDB powered POS system for WooCommerce. Instant local barcode scanning, offline caching, and 80mm thermal receipt printing.', 'omni-pos' ); ?>
+				<h1 style="font-size: 30px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; letter-spacing: -0.5px;"><?php esc_html_e( 'Omni POS — Ultra Fast Point of Sale & Management', 'omni-pos' ); ?></h1>
+				<p style="font-size: 16px; color: #64748b; margin-bottom: 28px; max-width: 620px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+					<?php esc_html_e( 'Lightweight, ultra-fast React + IndexedDB Point of Sale with a standalone modern Admin Panel, local barcode scanning, and instant receipt printing.', 'omni-pos' ); ?>
 				</p>
 
-				<div style="margin-bottom: 28px;">
-					<a href="<?php echo esc_url( $launch_url ); ?>" target="_blank" style="display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 36px; font-size: 18px; font-weight: 600; border-radius: 10px; box-shadow: 0 4px 14px rgba(37,99,235,0.4); transition: all 0.2s;">
-						🚀 <?php esc_html_e( 'Open POS Register', 'omni-pos' ); ?> (<?php echo esc_html( $launch_url ); ?>)
+					<!-- Launch Buttons -->
+				<div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px;">
+					<a href="<?php echo esc_url( $launch_url ); ?>" target="_blank" style="display: inline-flex; align-items: center; background: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: 12px; box-shadow: 0 4px 16px rgba(37,99,235,0.35); transition: all 0.2s;">
+						🏪 <span style="margin-left: 8px;"><?php esc_html_e( 'Open POS Register', 'omni-pos' ); ?></span>
 					</a>
+
+					<?php if ( 'omni_pos' === $inventory_mode && ( current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ) ) ) : ?>
+					<a href="<?php echo esc_url( $admin_hub_url ); ?>" target="_blank" style="display: inline-flex; align-items: center; background: #0f172a; color: #ffffff; text-decoration: none; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: 12px; box-shadow: 0 4px 16px rgba(15,23,42,0.25); transition: all 0.2s;">
+						🛡️ <span style="margin-left: 8px;"><?php esc_html_e( 'Open Omni Admin Hub', 'omni-pos' ); ?></span>
+					</a>
+					<?php endif; ?>
 				</div>
 
-				<div style="display: inline-flex; align-items: center; background: #f1f5f9; padding: 8px 16px; border-radius: 8px; font-family: monospace; font-size: 13px; color: #334155; border: 1px solid #cbd5e1;">
-					<span style="color: #64748b; margin-right: 8px;">Direct POS Link:</span>
-					<strong><a href="<?php echo esc_url( $launch_url ); ?>" target="_blank" style="color: #2563eb; text-decoration: none;"><?php echo esc_html( $launch_url ); ?></a></strong>
+				<div style="display: inline-flex; align-items: center; background: #f8fafc; padding: 8px 18px; border-radius: 10px; font-family: monospace; font-size: 13px; color: #334155; border: 1px solid #e2e8f0;">
+					<span style="color: #64748b; margin-right: 8px;"><?php esc_html_e( 'Inventory Management Mode:', 'omni-pos' ); ?></span>
+					<strong style="color: #2563eb; text-transform: uppercase;"><?php echo esc_html( $inventory_mode === 'omni_pos' ? __( 'Omni POS Direct Control', 'omni-pos' ) : __( 'WooCommerce Standard', 'omni-pos' ) ); ?></strong>
 				</div>
 
-				<div style="margin-top: 36px; padding-top: 24px; border-top: 1px solid #f1f5f9; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: left;">
-					<div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
-						<strong style="color: #0f172a; display: block; margin-bottom: 4px;">⚡ <?php esc_html_e( 'Local IndexedDB Cache', 'omni-pos' ); ?></strong>
-						<span style="font-size: 13px; color: #64748b;"><?php esc_html_e( 'Catalogue is cached in browser memory for instantaneous (<3ms) response.', 'omni-pos' ); ?></span>
+				<div style="margin-top: 40px; padding-top: 28px; border-top: 1px solid #f1f5f9; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: left;">
+					<div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+						<strong style="color: #0f172a; display: block; margin-bottom: 6px; font-size: 15px;">⚡ <?php esc_html_e( 'Instant Local Cache', 'omni-pos' ); ?></strong>
+						<span style="font-size: 13px; color: #64748b; line-height: 1.5;"><?php esc_html_e( 'IndexedDB cache delivers <3ms product searches and zero lag under high traffic.', 'omni-pos' ); ?></span>
 					</div>
-					<div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
-						<strong style="color: #0f172a; display: block; margin-bottom: 4px;">📷 <?php esc_html_e( 'Hardware Barcode Scanner', 'omni-pos' ); ?></strong>
-						<span style="font-size: 13px; color: #64748b;"><?php esc_html_e( 'Global key listener detects 1D/2D hand and presentation scanners.', 'omni-pos' ); ?></span>
+					<div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+						<strong style="color: #0f172a; display: block; margin-bottom: 6px; font-size: 15px;">🛡️ <?php esc_html_e( 'Standalone Admin Hub', 'omni-pos' ); ?></strong>
+						<span style="font-size: 13px; color: #64748b; line-height: 1.5;"><?php esc_html_e( 'Manage catalog, stock adjustments, shifts, cashiers and analytics without wp-admin.', 'omni-pos' ); ?></span>
 					</div>
-					<div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
-						<strong style="color: #0f172a; display: block; margin-bottom: 4px;">🧾 <?php esc_html_e( '80mm Thermal Receipt', 'omni-pos' ); ?></strong>
-						<span style="font-size: 13px; color: #64748b;"><?php esc_html_e( 'Custom print layout for standard POS thermal receipt printers.', 'omni-pos' ); ?></span>
+					<div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+						<strong style="color: #0f172a; display: block; margin-bottom: 6px; font-size: 15px;">🧾 <?php esc_html_e( '80mm Thermal Receipt', 'omni-pos' ); ?></strong>
+						<span style="font-size: 13px; color: #64748b; line-height: 1.5;"><?php esc_html_e( 'Ultra fast clean receipt output customized with store details, barcode and VAT info.', 'omni-pos' ); ?></span>
 					</div>
 				</div>
 			</div>
@@ -183,22 +203,66 @@ class Omni_POS_Admin {
 	 * Render Settings Page
 	 */
 	public static function render_settings_page() {
+		$admin_hub_url = self::get_admin_hub_url();
 		?>
-		<div class="wrap" style="max-width: 800px;">
-			<h1>⚙️ <?php esc_html_e( 'Omni POS Settings', 'omni-pos' ); ?></h1>
-			<form method="post" action="options.php" style="background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #ccd0d4; margin-top: 16px;">
+		<div class="wrap" style="max-width: 860px;">
+			<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px; margin-bottom: 20px;">
+				<h1 style="margin: 0; font-size: 24px; font-weight: 700;">⚙️ <?php esc_html_e( 'Omni POS Settings', 'omni-pos' ); ?></h1>
+				<a href="<?php echo esc_url( $admin_hub_url ); ?>" target="_blank" class="button button-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; padding: 4px 16px; height: auto;">
+					🛡️ <?php esc_html_e( 'Open Omni Admin Hub', 'omni-pos' ); ?>
+				</a>
+			</div>
+
+			<form method="post" action="options.php" style="background: #fff; padding: 28px; border-radius: 12px; border: 1px solid #ccd0d4; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
 				<?php
 				settings_fields( 'omni_pos_settings_group' );
 				do_settings_sections( 'omni_pos_settings_group' );
+				$inventory_mode = get_option( 'omni_pos_inventory_mode', 'woocommerce' );
 				?>
+				<h2 style="margin-top: 0; font-size: 17px; font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;"><?php esc_html_e( '📦 Management Mode & General', 'omni-pos' ); ?></h2>
 				<table class="form-table">
 					<tr valign="top">
-						<th scope="row"><?php esc_html_e( 'Direct POS URL', 'omni-pos' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Inventory & Products Control', 'omni-pos' ); ?></th>
 						<td>
-							<code><a href="<?php echo esc_url( self::get_pos_url() ); ?>" target="_blank"><?php echo esc_html( self::get_pos_url() ); ?></a></code>
-							<p class="description"><?php esc_html_e( 'Use this clean short link to open the POS register directly on cashier terminals.', 'omni-pos' ); ?></p>
+							<fieldset>
+								<label style="display: block; margin-bottom: 8px;">
+									<input type="radio" name="omni_pos_inventory_mode" value="woocommerce" <?php checked( $inventory_mode, 'woocommerce' ); ?> />
+									<strong><?php esc_html_e( 'WooCommerce Standard', 'omni-pos' ); ?></strong>
+									<span class="description" style="display: block; margin-left: 24px;"><?php esc_html_e( 'Products and stock levels are primarily managed via default WooCommerce Products menu.', 'omni-pos' ); ?></span>
+								</label>
+								<label style="display: block; margin-top: 10px;">
+									<input type="radio" name="omni_pos_inventory_mode" value="omni_pos" <?php checked( $inventory_mode, 'omni_pos' ); ?> />
+									<strong><?php esc_html_e( 'Omni POS Direct Control (Recommended for Retail)', 'omni-pos' ); ?></strong>
+									<span class="description" style="display: block; margin-left: 24px;"><?php esc_html_e( 'Enables direct rapid stock adjustment, barcode management, and POS-tailored catalog tools in Omni Admin Hub.', 'omni-pos' ); ?></span>
+								</label>
+							</fieldset>
 						</td>
 					</tr>
+					<tr valign="top">
+						<th scope="row"><?php esc_html_e( 'Low Stock Alert Threshold', 'omni-pos' ); ?></th>
+						<td>
+							<input type="number" min="1" max="1000" name="omni_pos_low_stock_threshold" value="<?php echo esc_attr( get_option( 'omni_pos_low_stock_threshold', 5 ) ); ?>" class="small-text" />
+							<p class="description"><?php esc_html_e( 'Show warning badge in POS and Admin Hub when item stock falls to or below this quantity.', 'omni-pos' ); ?></p>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row"><?php esc_html_e( 'Direct POS Register URL', 'omni-pos' ); ?></th>
+						<td>
+							<code><a href="<?php echo esc_url( self::get_pos_url() ); ?>" target="_blank"><?php echo esc_html( self::get_pos_url() ); ?></a></code>
+							<p class="description"><?php esc_html_e( 'Direct cashier register link.', 'omni-pos' ); ?></p>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row"><?php esc_html_e( 'Direct Admin Hub URL', 'omni-pos' ); ?></th>
+						<td>
+							<code><a href="<?php echo esc_url( $admin_hub_url ); ?>" target="_blank"><?php echo esc_html( $admin_hub_url ); ?></a></code>
+							<p class="description"><?php esc_html_e( 'Direct standalone manager/admin panel link.', 'omni-pos' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2 style="margin-top: 24px; font-size: 17px; font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;"><?php esc_html_e( '🧾 Receipt & Hardware', 'omni-pos' ); ?></h2>
+				<table class="form-table">
 					<tr valign="top">
 						<th scope="row"><?php esc_html_e( 'Store Phone for Receipt', 'omni-pos' ); ?></th>
 						<td>
@@ -252,73 +316,10 @@ class Omni_POS_Admin {
 	 * Get Frontend Translation Strings
 	 */
 	public static function get_frontend_translations() {
-		return array(
-			'all'                   => __( 'All', 'omni-pos' ),
-			'search_placeholder'    => __( 'Search products or scan barcode...', 'omni-pos' ),
-			'auto'                  => __( 'Auto', 'omni-pos' ),
-			'products_loading'      => __( 'Loading products...', 'omni-pos' ),
-			'no_products_found'     => __( 'No products found', 'omni-pos' ),
-			'no_products_desc'      => __( 'Try a different search query, change category, or sync catalogue from server.', 'omni-pos' ),
-			'full_sync_button'      => __( 'Full Catalogue Sync', 'omni-pos' ),
-			'in_stock_unit'         => __( 'units', 'omni-pos' ),
-			'out_of_stock'          => __( 'Out of Stock', 'omni-pos' ),
-			'variations'            => __( 'variations', 'omni-pos' ),
-			'customer'              => __( 'Customer', 'omni-pos' ),
-			'walk_in_customer'      => __( 'Walk-in Customer (Guest)', 'omni-pos' ),
-			'clear_cart'            => __( 'Clear Cart', 'omni-pos' ),
-			'cart_empty'            => __( 'Cart is empty', 'omni-pos' ),
-			'cart_empty_desc'       => __( 'Scan a barcode or click a product to add to cart', 'omni-pos' ),
-			'subtotal'              => __( 'Subtotal', 'omni-pos' ),
-			'discount'              => __( 'Discount', 'omni-pos' ),
-			'add_discount'          => __( 'Add discount', 'omni-pos' ),
-			'total_payable'         => __( 'Total Payable', 'omni-pos' ),
-			'pay'                   => __( 'Pay', 'omni-pos' ),
-			'payment_checkout'      => __( 'Payment Checkout', 'omni-pos' ),
-			'select_payment_method' => __( 'Select payment method', 'omni-pos' ),
-			'payable_amount'        => __( 'Payable Amount', 'omni-pos' ),
-			'cash'                  => __( 'Cash', 'omni-pos' ),
-			'card'                  => __( 'Credit / Debit Card (POS)', 'omni-pos' ),
-			'split'                 => __( 'Split Payment', 'omni-pos' ),
-			'tendered_cash'         => __( 'Tendered Cash', 'omni-pos' ),
-			'exact'                 => __( 'Exact', 'omni-pos' ),
-			'change_due'            => __( 'Change Due:', 'omni-pos' ),
-			'order_note'            => __( 'Order note (optional)', 'omni-pos' ),
-			'order_note_placeholder'=> __( 'e.g. Table 4, discount applied...', 'omni-pos' ),
-			'cancel'                => __( 'Cancel', 'omni-pos' ),
-			'processing'            => __( 'Processing...', 'omni-pos' ),
-			'complete_payment'      => __( 'Complete Payment', 'omni-pos' ),
-			'payment_success'       => __( 'Payment Successful!', 'omni-pos' ),
-			'print_receipt'         => __( 'Print Receipt (80mm)', 'omni-pos' ),
-			'new_sale'              => __( 'New Sale', 'omni-pos' ),
-			'recent_orders'         => __( 'Recent Orders History', 'omni-pos' ),
-			'completed_sales'       => __( 'Completed sales list', 'omni-pos' ),
-			'order_number'          => __( 'Order #', 'omni-pos' ),
-			'date'                  => __( 'Date', 'omni-pos' ),
-			'units'                 => __( 'Items', 'omni-pos' ),
-			'amount'                => __( 'Total', 'omni-pos' ),
-			'status'                => __( 'Status', 'omni-pos' ),
-			'select_customer'       => __( 'Select Customer', 'omni-pos' ),
-			'attach_customer_desc'  => __( 'Attach customer to this sale', 'omni-pos' ),
-			'add_new_customer'      => __( 'Add New Customer', 'omni-pos' ),
-			'first_name'            => __( 'First Name', 'omni-pos' ),
-			'last_name'             => __( 'Last Name', 'omni-pos' ),
-			'phone_number'          => __( 'Phone Number', 'omni-pos' ),
-			'email'                 => __( 'Email', 'omni-pos' ),
-			'save_and_select'       => __( 'Save & Select', 'omni-pos' ),
-			'back'                  => __( 'Back', 'omni-pos' ),
-			'syncing'               => __( 'Syncing...', 'omni-pos' ),
-			'sync_catalogue'        => __( 'Sync Catalogue', 'omni-pos' ),
-			'history'               => __( 'History', 'omni-pos' ),
-			'cashier'               => __( 'Cashier', 'omni-pos' ),
-			'fullscreen'            => __( 'Fullscreen', 'omni-pos' ),
-			'logout'                => __( 'Logout', 'omni-pos' ),
-			'offline_ready'         => __( 'Offline Ready (IndexedDB)', 'omni-pos' ),
-			'catalogue_synced'      => __( 'Catalogue synced successfully', 'omni-pos' ),
-			'sync_error'            => __( 'Sync error', 'omni-pos' ),
-			'added_to_cart'         => __( 'Added to cart', 'omni-pos' ),
-			'product_not_found'     => __( 'Product not found with barcode', 'omni-pos' ),
-			'order_created'         => __( 'Order created successfully!', 'omni-pos' ),
-		);
+		if ( class_exists( 'Omni_POS_I18n' ) ) {
+			return Omni_POS_I18n::get_resolved_translations();
+		}
+		return array();
 	}
 
 	/**
@@ -376,36 +377,53 @@ class Omni_POS_Admin {
 				}
 			}
 
-			// Enqueue CSS
+			// Enqueue CSS with automatic cache busting
 			foreach ( $css_files as $idx => $css_rel ) {
+				$css_ver = file_exists( $build_dir . $css_rel ) ? (string) filemtime( $build_dir . $css_rel ) : OMNI_POS_VERSION;
 				wp_enqueue_style(
 					'omni-pos-app-' . $idx,
 					$build_url . $css_rel,
 					array(),
-					OMNI_POS_VERSION
+					$css_ver
 				);
 			}
 
 			// Enqueue JS with localized configuration
 			if ( $js_file ) {
+				$js_ver = file_exists( $build_dir . $js_file ) ? (string) filemtime( $build_dir . $js_file ) : OMNI_POS_VERSION;
 				wp_enqueue_script(
 					'omni-pos-app',
 					$build_url . $js_file,
 					array(),
-					OMNI_POS_VERSION,
+					$js_ver,
 					true
 				);
 
+				$requested_view = isset( $_GET['view'] ) ? sanitize_key( $_GET['view'] ) : 'register';
+				$is_admin_user  = current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' );
+				$inventory_mode = get_option( 'omni_pos_inventory_mode', 'woocommerce' );
+
+				// If admin panel is accessed but WooCommerce Standard mode is active, redirect to POS terminal
+				if ( 'admin' === $requested_view && ( 'omni_pos' !== $inventory_mode || ! $is_admin_user ) ) {
+					wp_safe_redirect( self::get_pos_url() );
+					exit;
+				}
+
 				$config_data = array(
-					'restUrl'   => $rest_url,
-					'posApiUrl' => $rest_url . 'omni-pos/v1/',
-					'nonce'     => $nonce,
-					'adminUrl'  => admin_url(),
-					'posUrl'    => $pos_url,
-					'logoutUrl' => wp_logout_url( $pos_url ),
-					'locale'    => get_locale(),
-					'version'   => OMNI_POS_VERSION,
-					'i18n'      => self::get_frontend_translations(),
+					'restUrl'        => $rest_url,
+					'posApiUrl'      => $rest_url . 'omni-pos/v1/',
+					'nonce'          => $nonce,
+					'adminUrl'       => admin_url(),
+					'posUrl'         => $pos_url,
+					'adminHubUrl'    => self::get_admin_hub_url(),
+					'logoutUrl'      => wp_logout_url( $pos_url ),
+					'locale'         => get_locale(),
+					'version'        => OMNI_POS_VERSION,
+					'isAdmin'        => $is_admin_user,
+					'inventoryMode'  => $inventory_mode,
+					'initialView'    => ( $is_admin_user && 'omni_pos' === $inventory_mode && 'admin' === $requested_view ) ? 'admin' : 'pos',
+					'initialTab'     => isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'dashboard',
+					'i18n'           => self::get_frontend_translations(),
 				);
 
 				$inline_script = 'window.omniPosConfig = ' . wp_json_encode( $config_data ) . ';';

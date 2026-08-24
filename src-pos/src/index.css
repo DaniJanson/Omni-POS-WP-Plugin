@@ -22,6 +22,29 @@
   body {
     @apply bg-slate-100 text-slate-900 dark:bg-[#0b0f19] dark:text-slate-100 font-sans antialiased overflow-hidden select-none transition-colors duration-200;
   }
+
+  /* Reset WordPress admin styles from bleeding into Omni POS inputs and buttons */
+  #root button,
+  #root input,
+  #root select,
+  #root textarea {
+    font-family: inherit;
+    box-sizing: border-box;
+    margin: 0;
+    line-height: normal;
+  }
+
+  #root button {
+    background-image: none;
+    border-style: none;
+    cursor: pointer;
+  }
+
+  #root input,
+  #root select,
+  #root textarea {
+    background-image: none;
+  }
 }
 
 /* Custom modern thin scrollbar */

@@ -47,15 +47,25 @@ export const OrdersModal: React.FC = () => {
           </div>
           <div className="flex items-center space-x-2">
             <button
+              onClick={() => {
+                setOrdersModalOpen(false);
+                usePosStore.getState().setActiveView('admin');
+                usePosStore.getState().setAdminActiveTab('orders');
+              }}
+              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+            >
+              {t('open_receipt_manager', 'Open Receipts Manager')}
+            </button>
+            <button
               onClick={fetchOrders}
               disabled={isLoading}
-              className="p-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+              className="p-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={() => setOrdersModalOpen(false)}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
