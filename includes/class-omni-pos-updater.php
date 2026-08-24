@@ -82,12 +82,32 @@ class Omni_POS_Updater {
         }
 
         $response = wp_remote_get($url, $args);
+        $body = null;
 
-        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-            return false;
+        if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+            $body = json_decode(wp_remote_retrieve_body($response), true);
         }
 
-        $body = json_decode(wp_remote_retrieve_body($response), true);
+        // Fallback: Check /tags if no formal Release created on GitHub yet
+        if (!$body || !isset($body['tag_name'])) {
+            $tags_url = 'https://api.github.com/repos/' . $this->github_repo . '/tags';
+            $tags_res = wp_remote_get($tags_url, $args);
+            if (!is_wp_error($tags_res) && wp_remote_retrieve_response_code($tags_res) === 200) {
+                $tags_body = json_decode(wp_remote_retrieve_body($tags_res), true);
+                if (!empty($tags_body) && is_array($tags_body) && isset($tags_body[0]['name'])) {
+                    $first_tag = $tags_body[0];
+                    $body = array(
+                        'tag_name'     => $first_tag['name'],
+                        'name'         => 'Omni POS ' . $first_tag['name'],
+                        'body'         => 'Release tag ' . $first_tag['name'] . ' published on GitHub.',
+                        'zipball_url'  => isset($first_tag['zipball_url']) ? $first_tag['zipball_url'] : ('https://github.com/' . $this->github_repo . '/archive/refs/tags/' . $first_tag['name'] . '.zip'),
+                        'html_url'     => 'https://github.com/' . $this->github_repo . '/releases/tag/' . $first_tag['name'],
+                        'published_at' => current_time('mysql'),
+                    );
+                }
+            }
+        }
+
         if (!$body || !isset($body['tag_name'])) {
             return false;
         }
