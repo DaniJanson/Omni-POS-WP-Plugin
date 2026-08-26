@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { usePosStore } from '../store/usePosStore';
-import { qzClient, type QzStatus } from '../services/qzClient';
 import { niceLabelClient } from '../services/niceLabelClient';
-import { QzTraySetupModal } from './hardware/QzTraySetupModal';
 import { ExtensionSetupModal } from './hardware/ExtensionSetupModal';
 import { t } from '../utils/i18n';
 import { formatPrice } from '../utils/format';
@@ -164,8 +162,6 @@ export const PosHeader: React.FC = () => {
 
   const isDirectControl = (adminSettings?.inventory_mode || window.omniPosConfig?.inventoryMode) === 'omni_pos';
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-  const [isQzModalOpen, setIsQzModalOpen] = useState(false);
-  const [qzStatus, setQzStatus] = useState<QzStatus>(qzClient.getStatus());
   const [isExtensionModalOpen, setIsExtensionModalOpen] = useState(false);
   const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
 
@@ -175,9 +171,7 @@ export const PosHeader: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const unsub = qzClient.onStatusChange((s) => setQzStatus(s));
     checkExtension();
-    return () => unsub();
   }, [checkExtension]);
 
   const handleFullscreen = () => {
@@ -271,28 +265,6 @@ export const PosHeader: React.FC = () => {
           </button>
         )}
 
-        {/* QZ Tray Hardware Bridge Status Button (Visible ONLY to Managers / Admins) */}
-        {Boolean(initData?.cashier?.capabilities?.manage_pos || window.omniPosConfig?.isAdmin) && (
-          <button
-            onClick={() => setIsQzModalOpen(true)}
-            title={`QZ Tray: ${qzStatus === 'connected' ? 'Connected (Silent Printing Active)' : 'Offline (Click to Setup)'}`}
-            className={`p-2 rounded-lg relative active:scale-95 transition-all border shadow-sm cursor-pointer ${
-              qzStatus === 'connected'
-                ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
-                : 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30'
-            }`}
-          >
-            <Printer className="w-4 h-4" />
-            <span
-              className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
-                qzStatus === 'connected'
-                  ? 'bg-emerald-500 shadow-sm'
-                  : 'bg-amber-500 animate-pulse'
-              }`}
-            />
-          </button>
-        )}
-
         {/* History / Orders Button */}
         <button
           onClick={() => setOrdersModalOpen(true)}
@@ -373,12 +345,6 @@ export const PosHeader: React.FC = () => {
         onCashierSwitched={() => {
           initialize();
         }}
-      />
-
-      {/* QZ Tray Setup Modal */}
-      <QzTraySetupModal
-        isOpen={isQzModalOpen}
-        onClose={() => setIsQzModalOpen(false)}
       />
 
       {/* NiceLabel Chrome Extension Setup Modal */}

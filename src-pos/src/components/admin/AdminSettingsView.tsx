@@ -441,7 +441,7 @@ export const AdminSettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Hardware & QZ Tray Printing */}
+        {/* 3. Hardware & Chrome Extension Thermal Printing */}
         <AdminSettingsHardware formData={formData} setFormData={setFormData} />
 
         {/* 4. Audio & POS Features */}

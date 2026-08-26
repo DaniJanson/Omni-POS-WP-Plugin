@@ -1,6 +1,6 @@
 /**
- * Omni POS NiceLabel Client Service
- * Dispatches print events to Omni POS NiceLabel Chrome Extension or direct HTTP trigger
+ * Omni POS Chrome Extension & NiceLabel Client Service
+ * Dispatches print events to Omni POS Chrome Extension
  */
 
 export interface NiceLabelItem {
@@ -17,6 +17,7 @@ export interface NiceLabelItem {
 export interface NiceLabelConfig {
   endpoint?: string;
   template?: string;
+  receipt_template?: string;
   printer?: string;
 }
 
@@ -29,20 +30,18 @@ export interface NiceLabelPrintResult {
 
 class NiceLabelClient {
   /**
-   * Check if Omni POS NiceLabel Chrome Extension is active
+   * Check if Omni POS Chrome Extension is active
    */
-  public async isExtensionInstalled(timeoutMs = 1200): Promise<boolean> {
+  public async isExtensionInstalled(timeoutMs = 800): Promise<boolean> {
     if (typeof window === 'undefined') return false;
 
-    // Quick global DOM flag check
-    if ((window as any).__OMNI_NICELABEL_EXTENSION__ === true) {
+    if ((window as any).__OMNI_PRINT_EXTENSION__ === true || (window as any).__OMNI_NICELABEL_EXTENSION__ === true) {
       return true;
     }
     if (document.documentElement.getAttribute('data-omni-extension') === 'true') {
       return true;
     }
 
-    // Handshake Ping-Pong
     return new Promise((resolve) => {
       let resolved = false;
 
@@ -50,16 +49,13 @@ class NiceLabelClient {
         if (resolved) return;
         resolved = true;
         window.removeEventListener('OMNI_EXTENSION_PONG', pongHandler);
-        (window as any).__OMNI_NICELABEL_EXTENSION__ = true;
+        (window as any).__OMNI_PRINT_EXTENSION__ = true;
         resolve(true);
       };
 
       window.addEventListener('OMNI_EXTENSION_PONG', pongHandler);
-
-      // Fire Ping
       window.dispatchEvent(new CustomEvent('OMNI_EXTENSION_PING', { detail: { timestamp: Date.now() } }));
 
-      // Timeout fallback
       setTimeout(() => {
         if (!resolved) {
           resolved = true;
@@ -83,14 +79,84 @@ class NiceLabelClient {
       return { success: false, message: 'No items in print queue.' };
     }
 
-    const hasExtension = await this.isExtensionInstalled(500);
+    const hasExtension = await this.isExtensionInstalled(400);
 
     if (hasExtension) {
       return this.printViaExtension(items, config, storeName);
     }
 
-    // Direct HTTP fetch fallback (if NiceLabel Automation allows CORS)
     return this.printDirectHttp(items, config, storeName);
+  }
+
+  /**
+   * Send Receipt Print Request via Chrome Extension
+   */
+  public async printReceipt(
+    receiptData: any,
+    storeData?: any,
+    config?: NiceLabelConfig
+  ): Promise<NiceLabelPrintResult> {
+    const hasExtension = await this.isExtensionInstalled(400);
+    if (!hasExtension) {
+      // Fallback standard browser print
+      window.print();
+      return { success: true, message: 'Browser print dialog triggered.' };
+    }
+
+    return new Promise((resolve) => {
+      const requestId = 'rcpt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      let resolved = false;
+
+      const responseHandler = (e: any) => {
+        const detail = e.detail;
+        if (detail && detail.requestId === requestId) {
+          if (resolved) return;
+          resolved = true;
+          window.removeEventListener('OMNI_PRINT_RECEIPT_RESPONSE', responseHandler);
+          resolve({
+            success: detail.success ?? false,
+            message: detail.message || (detail.success ? 'Receipt printed successfully.' : 'Receipt printing failed.'),
+          });
+        }
+      };
+
+      window.addEventListener('OMNI_PRINT_RECEIPT_RESPONSE', responseHandler);
+
+      window.dispatchEvent(
+        new CustomEvent('OMNI_PRINT_RECEIPT', {
+          detail: {
+            requestId,
+            receipt: receiptData,
+            store: storeData,
+            config,
+          },
+        })
+      );
+
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          window.removeEventListener('OMNI_PRINT_RECEIPT_RESPONSE', responseHandler);
+          // Fallback to browser print on timeout
+          window.print();
+          resolve({ success: true, message: 'Fell back to standard browser print.' });
+        }
+      }, 5000);
+    });
+  }
+
+  /**
+   * Send Cash Drawer Pulse Signal via Chrome Extension
+   */
+  public async openCashDrawer(config?: NiceLabelConfig): Promise<void> {
+    window.dispatchEvent(
+      new CustomEvent('OMNI_CASH_DRAWER_KICK', {
+        detail: {
+          config,
+          timestamp: Date.now(),
+        },
+      })
+    );
   }
 
   /**
@@ -133,22 +199,21 @@ class NiceLabelClient {
         })
       );
 
-      // 12s timeout
       setTimeout(() => {
         if (!resolved) {
           resolved = true;
           window.removeEventListener('OMNI_PRINT_NICELABEL_RESPONSE', responseHandler);
           resolve({
             success: false,
-            message: 'Timeout: Extension did not respond within 12 seconds.',
+            message: 'Timeout: Extension did not respond within 10 seconds.',
           });
         }
-      }, 12000);
+      }, 10000);
     });
   }
 
   /**
-   * Direct fetch fallback
+   * Direct HTTP fetch fallback
    */
   private async printDirectHttp(
     items: NiceLabelItem[],
@@ -200,7 +265,7 @@ class NiceLabelClient {
     } catch (err: any) {
       return {
         success: false,
-        message: `Direct NiceLabel HTTP Error: ${err.message}. Please install the Omni Chrome Extension for seamless printing.`,
+        message: `NiceLabel direct error: ${err.message}. Please install Omni Chrome Extension.`,
       };
     }
   }

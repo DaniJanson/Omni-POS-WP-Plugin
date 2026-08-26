@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { usePosStore } from '../store/usePosStore';
-import { qzClient } from '../services/qzClient';
-import { EscPosBuilder } from '../services/escpos';
-import { QzTraySetupModal } from './hardware/QzTraySetupModal';
+import { niceLabelClient } from '../services/niceLabelClient';
 import { formatPrice } from '../utils/format';
 import { t } from '../utils/i18n';
 import { Printer, Check, X, RotateCcw, Zap } from 'lucide-react';
@@ -16,62 +14,51 @@ export const ReceiptModal: React.FC = () => {
     showNotification,
   } = usePosStore();
 
-  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
-  const [isQzPrinting, setIsQzPrinting] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   if (!isReceiptModalOpen || !lastReceipt) return null;
 
   const handleUnifiedPrint = async () => {
-    const isManager = Boolean(initData?.cashier?.capabilities?.manage_pos || (window as any).omniPosConfig?.isAdmin);
-    const printerName = initData?.settings?.receipt_printer;
+    setIsPrinting(true);
+    try {
+      const completedOrder: any = {
+        order_number: lastReceipt.order_number,
+        created_at: lastReceipt.date,
+        cashier_name: lastReceipt.cashier,
+        customer: { id: 0, name: lastReceipt.customer_name || '' },
+        items: lastReceipt.items.map((i: any) => ({
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+          total: i.total,
+        })),
+        subtotal: lastReceipt.subtotal,
+        discount_total: lastReceipt.discount || 0,
+        tax_total: lastReceipt.tax || 0,
+        total: lastReceipt.total,
+        payment_method: lastReceipt.payment_method || 'cash',
+        amount_tendered: lastReceipt.tendered || lastReceipt.total,
+        change_amount: lastReceipt.change || 0,
+      };
 
-    if (qzClient.isConnected() && printerName) {
-      setIsQzPrinting(true);
-      try {
-        const completedOrder: any = {
-          order_number: lastReceipt.order_number,
-          created_at: lastReceipt.date,
-          cashier_name: lastReceipt.cashier,
-          customer: { id: 0, name: lastReceipt.customer_name || '' },
-          items: lastReceipt.items.map((i: any) => ({
-            name: i.name,
-            quantity: i.quantity,
-            price: i.price,
-            total: i.total,
-          })),
-          subtotal: lastReceipt.subtotal,
-          discount_total: lastReceipt.discount || 0,
-          tax_total: lastReceipt.tax || 0,
-          total: lastReceipt.total,
-          payment_method: lastReceipt.payment_method || 'cash',
-          amount_tendered: lastReceipt.tendered || lastReceipt.total,
-          change_amount: lastReceipt.change || 0,
-        };
+      const res = await niceLabelClient.printReceipt(
+        completedOrder,
+        initData?.store,
+        {
+          printer: initData?.settings?.receipt_printer,
+          receipt_template: 'receipt.nlbl',
+        }
+      );
 
-        const rawEscPos = EscPosBuilder.buildReceipt(completedOrder, initData?.store, {
-          kickDrawer: lastReceipt.payment_method === 'cash' && initData?.settings?.cash_drawer_kick !== false,
-          autoCut: initData?.settings?.auto_paper_cut !== false,
-          receiptHeader: initData?.settings?.receipt_header,
-          receiptFooter: initData?.settings?.receipt_footer,
-        });
-
-        await qzClient.printRaw(printerName, rawEscPos);
+      if (res && res.success) {
         showNotification(t('test_print_sent', 'Receipt sent to thermal printer!'), 'success');
-        return;
-      } catch (err: any) {
-        console.warn('QZ print failed, falling back to browser print:', err);
-      } finally {
-        setIsQzPrinting(false);
       }
+    } catch (err: any) {
+      console.warn('Print error, falling back to browser print:', err);
+      window.print();
+    } finally {
+      setIsPrinting(false);
     }
-
-    if (!qzClient.isConnected() && isManager && printerName) {
-      setIsSetupModalOpen(true);
-      return;
-    }
-
-    // Fallback standard browser print
-    window.print();
   };
 
   const store = initData?.store;
@@ -226,11 +213,11 @@ export const ReceiptModal: React.FC = () => {
           <button
             type="button"
             onClick={handleUnifiedPrint}
-            disabled={isQzPrinting}
+            disabled={isPrinting}
             className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 flex items-center justify-center space-x-1.5 active:scale-95 transition-all cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            <span>{isQzPrinting ? t('processing', 'Printing...') : t('print_receipt', 'Print Receipt (80mm)')}</span>
+            <span>{isPrinting ? t('processing', 'Printing...') : t('print_receipt', 'Print Receipt (80mm)')}</span>
           </button>
 
           <button
@@ -243,18 +230,6 @@ export const ReceiptModal: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* QZ Tray Setup Modal (Only for Managers / Admins) */}
-      {isManager && (
-        <QzTraySetupModal
-          isOpen={isSetupModalOpen}
-          onClose={() => setIsSetupModalOpen(false)}
-          onSuccess={() => {
-            setIsSetupModalOpen(false);
-            handleUnifiedPrint();
-          }}
-        />
-      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { t } from '../../utils/i18n';
-import { qzClient } from '../../services/qzClient';
+import { niceLabelClient } from '../../services/niceLabelClient';
 import { usePosStore } from '../../store/usePosStore';
 import { generateCode128Bars } from '../../utils/barcodeSvg';
 import type { Product } from '../../types';
@@ -53,132 +53,54 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   const [showBarcodeNumber, setShowBarcodeNumber] = useState<boolean>(true);
   const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md');
   const [isPrinting, setIsPrinting] = useState<boolean>(false);
-  const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
-  const [selectedPrinter, setSelectedPrinter] = useState<string>(
-    initData?.settings?.label_printer || initData?.settings?.receipt_printer || ''
-  );
+  const [isExtInstalled, setIsExtInstalled] = useState<boolean>(false);
 
-  // Discover printers on modal open
-  React.useEffect(() => {
-    if (isOpen && qzClient.isConnected()) {
-      qzClient.getPrinters().then((printers) => {
-        setAvailablePrinters(printers);
-        if (!selectedPrinter && printers.length > 0) {
-          const pref =
-            initData?.settings?.label_printer ||
-            initData?.settings?.receipt_printer ||
-            printers[0];
-          setSelectedPrinter(pref);
-        }
-      });
+  useEffect(() => {
+    if (isOpen) {
+      niceLabelClient.isExtensionInstalled(500).then(setIsExtInstalled);
     }
-  }, [isOpen, selectedPrinter, initData]);
+  }, [isOpen]);
 
   if (!isOpen || itemsToPrint.length === 0) return null;
 
   const targetProduct = itemsToPrint[0];
   const barcodeValue = targetProduct.barcode || targetProduct.sku || targetProduct.id.toString();
-  const isQzConnected = qzClient.isConnected();
-
-  const getDimensionMM = (sizeKey: string) => {
-    switch (sizeKey) {
-      case '50x30':
-        return { w: 50, h: 30 };
-      case '58x40':
-        return { w: 58, h: 40 };
-      case '30x20':
-        return { w: 30, h: 20 };
-      default:
-        return { w: 40, h: 30 };
-    }
-  };
 
   const handleBrowserPrint = () => {
     window.print();
   };
 
-  const handleDirectQzPrint = async () => {
-    const printer = selectedPrinter || availablePrinters[0];
-    if (!printer) {
-      showNotification(t('select_printer', 'Please select a printer!'), 'error');
-      return;
-    }
-
+  const handleDirectPrint = async () => {
     setIsPrinting(true);
     try {
-      const dim = getDimensionMM(labelSize);
+      const itemsPayload = itemsToPrint.map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        priceFormatted: `${currency}${p.price.toFixed(2)}`,
+        barcode: p.barcode || p.sku || p.id.toString(),
+        sku: p.sku || '',
+        quantity: labelCount,
+        category: p.categories?.[0]?.name || '',
+      }));
 
-      // Generate clean standalone HTML document for thermal label printing
-      let stickersHtml = '';
-      for (const prod of itemsToPrint) {
-        const bVal = prod.barcode || prod.sku || prod.id.toString();
-        const pBars = generateCode128Bars(bVal);
+      const res = await niceLabelClient.printBatch(
+        itemsPayload,
+        {
+          printer: initData?.settings?.label_printer,
+          template: 'product_label.nlbl',
+        },
+        customStoreName
+      );
 
-        let svgRects = '';
-        pBars.forEach((isBar, idx) => {
-          if (isBar) {
-            svgRects += `<rect x="${idx}" y="0" width="1" height="36" fill="black" />`;
-          }
-        });
-
-        const singleSticker = `
-          <div class="sticker-card" style="width:${dim.w}mm; height:${dim.h}mm; box-sizing:border-box; padding:2mm; text-align:center; font-family:sans-serif; page-break-after:always; display:flex; flex-direction:column; justify-content:space-between; align-items:center;">
-            ${showStoreName ? `<div style="font-size:8px; font-weight:bold; text-transform:uppercase; color:#333; margin-bottom:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${customStoreName}</div>` : ''}
-            ${showProductName ? `<div style="font-size:10px; font-weight:bold; color:#000; line-height:1.1; max-height:22px; overflow:hidden; width:100%; margin-bottom:1px;">${prod.name}</div>` : ''}
-            <div style="width:90%; margin:1px 0;">
-              <svg viewBox="0 0 ${pBars.length} 36" style="width:100%; height:24px;" preserveAspectRatio="none">
-                ${svgRects}
-              </svg>
-              ${showBarcodeNumber ? `<div style="font-family:monospace; font-size:8px; font-weight:bold; letter-spacing:1px; margin-top:1px;">${bVal}</div>` : ''}
-            </div>
-            <div style="width:100%; display:flex; justify-content:space-between; align-items:baseline; border-top:0.5px solid #ccc; padding-top:1px;">
-              ${showSku ? `<span style="font-size:7px; color:#555; font-family:monospace;">${prod.sku ? `SKU:${prod.sku}` : ''}</span>` : '<span></span>'}
-              ${showPrice ? `<span style="font-size:11px; font-weight:900; color:#000; font-family:sans-serif;">${currency}${prod.price.toFixed(2)}</span>` : ''}
-            </div>
-          </div>
-        `;
-
-        for (let c = 0; c < labelCount; c++) {
-          stickersHtml += singleSticker;
-        }
+      if (res && res.success) {
+        showNotification(t('test_print_sent', `Sent ${labelCount * itemsToPrint.length} labels to NiceLabel printer!`), 'success');
+        onClose();
+      } else {
+        showNotification(res ? res.message : 'Print failed', 'error');
       }
-
-      const fullHtmlDoc = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            @page {
-              size: ${dim.w}mm ${dim.h}mm;
-              margin: 0;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              background: #fff;
-              -webkit-print-color-adjust: exact;
-            }
-          </style>
-        </head>
-        <body>
-          ${stickersHtml}
-        </body>
-        </html>
-      `;
-
-      await qzClient.printHtml(printer, fullHtmlDoc, {
-        pageWidth: dim.w,
-        pageHeight: dim.h,
-        units: 'mm',
-        margins: 0,
-        copies: 1,
-      });
-
-      showNotification(t('test_print_sent', `Sent ${labelCount * itemsToPrint.length} labels directly to ${printer}!`), 'success');
-      onClose();
     } catch (err: any) {
-      console.error('QZ Direct Label Print failed:', err);
+      console.error('Direct Label Print failed:', err);
       showNotification('Print Error: ' + (err.message || 'Failed'), 'error');
     } finally {
       setIsPrinting(false);
@@ -460,26 +382,17 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
         {/* Modal Footer: Action Buttons */}
         <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Printer Selector */}
+          {/* Extension Status Badge */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Printer className="w-4 h-4 text-slate-500 shrink-0" />
-            {isQzConnected && availablePrinters.length > 0 ? (
-              <select
-                value={selectedPrinter}
-                onChange={(e) => setSelectedPrinter(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-              >
-                {availablePrinters.map((p) => (
-                  <option key={p} value={p}>
-                    🖨️ {p}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                {isQzConnected ? 'Detecting printers...' : 'Default System Printer (Browser Print)'}
-              </span>
-            )}
+            <span
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                isExtInstalled
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+                  : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
+              }`}
+            >
+              {isExtInstalled ? '🟢 Extension Active' : '🟡 Browser Print Fallback'}
+            </span>
           </div>
 
           <div className="flex items-center space-x-3 w-full sm:w-auto">
@@ -500,12 +413,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
               <Printer className="w-4 h-4" />
             </button>
 
-            {/* Direct QZ Tray Print */}
+            {/* Direct Extension Print */}
             <button
               type="button"
-              onClick={handleDirectQzPrint}
+              onClick={handleDirectPrint}
               disabled={isPrinting}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white text-xs font-bold shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 active:scale-95 text-white text-xs font-bold shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 cursor-pointer"
             >
               {isPrinting ? (
                 <RotateCw className="w-4 h-4 animate-spin" />
@@ -515,7 +428,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
               <span>
                 {isPrinting
                   ? 'Printing...'
-                  : `⚡ Direct Print (${labelCount * itemsToPrint.length})`}
+                  : `🏷️ Print on NiceLabel (${labelCount * itemsToPrint.length})`}
               </span>
             </button>
           </div>

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { db } from '../db';
 import { posApi } from '../services/api';
-import { qzClient } from '../services/qzClient';
+import { niceLabelClient } from '../services/niceLabelClient';
 import { EscPosBuilder } from '../services/escpos';
 import { sound } from '../utils/sound';
 import { t } from '../utils/i18n';
@@ -787,20 +787,20 @@ export const usePosStore = create<PosState>((set, get) => ({
         const receiptPrinter = settings?.receipt_printer;
         const isSilentPrint = settings?.silent_print !== false;
 
-        // Try QZ Tray Silent Direct Thermal Print & Cash Drawer Kick
+        // Try Extension Silent Direct Thermal Print & Cash Drawer Kick
         let printedSilently = false;
-        if (qzClient.isConnected() && receiptPrinter && isSilentPrint) {
+        const hasExt = await niceLabelClient.isExtensionInstalled(300);
+        if (hasExt && isSilentPrint) {
           try {
-            const rawEscPos = EscPosBuilder.buildReceipt(result.receipt as any, initData?.store, {
-              kickDrawer: payment.method === 'cash' && settings?.cash_drawer_kick !== false,
-              autoCut: settings?.auto_paper_cut !== false,
-              receiptHeader: settings?.receipt_header,
-              receiptFooter: settings?.receipt_footer,
+            await niceLabelClient.printReceipt(result.receipt, initData?.store, {
+              printer: receiptPrinter,
             });
-            await qzClient.printRaw(receiptPrinter, rawEscPos);
+            if (payment.method === 'cash' && settings?.cash_drawer_kick !== false) {
+              await niceLabelClient.openCashDrawer({ printer: receiptPrinter });
+            }
             printedSilently = true;
           } catch (printErr) {
-            console.warn('Silent QZ print failed, falling back to modal:', printErr);
+            console.warn('Silent print failed, falling back to modal:', printErr);
           }
         }
 
