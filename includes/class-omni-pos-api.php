@@ -445,6 +445,13 @@ class Omni_POS_API {
 			'callback'            => array( __CLASS__, 'admin_download_extension_zip' ),
 			'permission_callback' => '__return_true',
 		) );
+
+		// 38. NiceLabel Automation Solution & Templates 1-Click Package Download
+		register_rest_route( self::NAMESPACE, '/admin/nicelabel/download', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'admin_download_nicelabel_zip' ),
+			'permission_callback' => '__return_true',
+		) );
 	}
 
 	/**
@@ -2861,6 +2868,50 @@ class Omni_POS_API {
 				'success'      => true,
 				'download_url' => $download_url,
 				'filename'     => 'omni-nicelabel-print-extension.zip',
+			) );
+		} catch ( \Throwable $e ) {
+			return new WP_Error( 'zip_failed', $e->getMessage(), array( 'status' => 500 ) );
+		}
+	}
+
+	/**
+	 * GET /omni-pos/v1/admin/nicelabel/download
+	 * Generates/Serves a clean zip bundle of ready NiceLabel .misx and .nlbl files
+	 */
+	public static function admin_download_nicelabel_zip( $request ) {
+		try {
+			$nl_dir = OMNI_POS_PATH . 'nicelabel';
+			if ( ! is_dir( $nl_dir ) ) {
+				return new WP_Error( 'missing_dir', 'NiceLabel configuration folder not found in plugin.' );
+			}
+
+			$upload_dir = wp_upload_dir();
+			$zip_file   = $upload_dir['basedir'] . '/omni-nicelabel-ready-package.zip';
+
+			if ( class_exists( 'ZipArchive' ) ) {
+				$zip = new ZipArchive();
+				if ( $zip->open( $zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE ) === true ) {
+					$files = new RecursiveIteratorIterator(
+						new RecursiveDirectoryIterator( $nl_dir, RecursiveDirectoryIterator::SKIP_DOTS ),
+						RecursiveIteratorIterator::LEAVES_ONLY
+					);
+					foreach ( $files as $name => $file ) {
+						if ( ! $file->isDir() ) {
+							$filePath     = $file->getRealPath();
+							$relativePath = substr( $filePath, strlen( $nl_dir ) + 1 );
+							$zip->addFile( $filePath, $relativePath );
+						}
+					}
+					$zip->close();
+				}
+			}
+
+			$download_url = $upload_dir['baseurl'] . '/omni-nicelabel-ready-package.zip?v=' . time();
+
+			return rest_ensure_response( array(
+				'success'      => true,
+				'download_url' => $download_url,
+				'filename'     => 'omni-nicelabel-ready-package.zip',
 			) );
 		} catch ( \Throwable $e ) {
 			return new WP_Error( 'zip_failed', $e->getMessage(), array( 'status' => 500 ) );

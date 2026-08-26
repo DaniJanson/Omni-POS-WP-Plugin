@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<NiceLabelDocument Version="7.0">
+  <Label Width="40mm" Height="30mm" Orientation="Landscape" Units="mm">
+    <Variables>
+      <Variable Name="ProductName" Type="Text" DefaultValue="Sample Product Name" Length="100" />
+      <Variable Name="Price" Type="Text" DefaultValue="15.00 ₾" Length="30" />
+      <Variable Name="PriceRaw" Type="Numeric" DefaultValue="15.00" />
+      <Variable Name="Barcode" Type="Text" DefaultValue="200000012345" Length="50" />
+      <Variable Name="SKU" Type="Text" DefaultValue="PROD-001" Length="50" />
+      <Variable Name="Quantity" Type="Numeric" DefaultValue="1" />
+      <Variable Name="Category" Type="Text" DefaultValue="General" Length="50" />
+      <Variable Name="StoreName" Type="Text" DefaultValue="Omni Store" Length="50" />
+      <Variable Name="Date" Type="Text" DefaultValue="2026-08-26" Length="20" />
+    </Variables>
+    <Objects>
+      <Text Left="2mm" Top="1.5mm" Width="36mm" Height="3.5mm" Font="Arial" FontSize="7pt" Bold="true" Alignment="Center" Variable="StoreName">Omni Store</Text>
+      <Text Left="2mm" Top="5mm" Width="36mm" Height="6mm" Font="Arial" FontSize="8pt" Bold="true" Alignment="Center" Multiline="true" Variable="ProductName">Sample Product Name</Text>
+      <Barcode Left="4mm" Top="11mm" Width="32mm" Height="10mm" Symbology="Code128" HumanReadable="Bottom" Variable="Barcode">200000012345</Barcode>
+      <Text Left="2mm" Top="22mm" Width="18mm" Height="5mm" Font="Consolas" FontSize="6.5pt" Alignment="Left" Variable="SKU">SKU: PROD-001</Text>
+      <Text Left="20mm" Top="21.5mm" Width="18mm" Height="6mm" Font="Arial" FontSize="10pt" Bold="true" Alignment="Right" Variable="Price">15.00 ₾</Text>
+    </Objects>
+  </Label>
+</NiceLabelDocument>

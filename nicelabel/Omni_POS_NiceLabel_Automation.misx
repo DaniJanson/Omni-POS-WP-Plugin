@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Solution Version="7" Name="Omni_POS_Automation_Solution">
+  <Configurations>
+    <Configuration Name="Omni_POS_Print_Bridge" Description="Omni POS Automated NiceLabel Printing Service" Enabled="true">
+      <Triggers>
+        <HttpServerTrigger Name="Omni_POS_HTTP_Trigger" Enabled="true" Port="56424" Path="/print" Timeout="30" AllowAnonymous="true" HttpMethod="POST" ResponseType="Automatic">
+          <Actions>
+            <UseDataFilter Name="Parse_Omni_JSON" Enabled="true" FilterName="Omni_JSON_Filter" DataSourceType="ReceivedData">
+              <Actions>
+                <OpenLabel Name="Open_Omni_Label" Enabled="true" LabelPath="product_label.nlbl" RelativePath="true" UseDefaultPrinter="true">
+                  <Variables>
+                    <Variable Name="ProductName" Field="ProductName" />
+                    <Variable Name="Price" Field="Price" />
+                    <Variable Name="PriceRaw" Field="PriceRaw" />
+                    <Variable Name="Barcode" Field="Barcode" />
+                    <Variable Name="SKU" Field="SKU" />
+                    <Variable Name="Quantity" Field="Quantity" />
+                    <Variable Name="Category" Field="Category" />
+                    <Variable Name="StoreName" Field="StoreName" />
+                    <Variable Name="Date" Field="Date" />
+                  </Variables>
+                </OpenLabel>
+                <PrintLabel Name="Print_Barcode_Label" Enabled="true" QuantityVariable="Quantity" DefaultQuantity="1" PrintAllRecords="true" />
+              </Actions>
+            </UseDataFilter>
+          </Actions>
+        </HttpServerTrigger>
+      </Triggers>
+      <Filters>
+        <JsonFilter Name="Omni_JSON_Filter" Description="Parses Omni POS Labels JSON payload">
+          <RootProperty>labels</RootProperty>
+          <Fields>
+            <Field Name="ProductName" JsonPath="ProductName" DataType="String" />
+            <Field Name="Price" JsonPath="Price" DataType="String" />
+            <Field Name="PriceRaw" JsonPath="PriceRaw" DataType="Numeric" />
+            <Field Name="Barcode" JsonPath="Barcode" DataType="String" />
+            <Field Name="SKU" JsonPath="SKU" DataType="String" />
+            <Field Name="Quantity" JsonPath="Quantity" DataType="Numeric" />
+            <Field Name="Category" JsonPath="Category" DataType="String" />
+            <Field Name="StoreName" JsonPath="StoreName" DataType="String" />
+            <Field Name="Date" JsonPath="Date" DataType="String" />
+          </Fields>
+        </JsonFilter>
+      </Filters>
+    </Configuration>
+  </Configurations>
+</Solution>

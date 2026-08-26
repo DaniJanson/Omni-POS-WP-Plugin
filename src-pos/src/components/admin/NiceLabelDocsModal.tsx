@@ -18,6 +18,9 @@ import {
   Sparkles,
   Layers,
   Code2,
+  Download,
+  FolderArchive,
+  PlayCircle,
 } from 'lucide-react';
 
 interface NiceLabelDocsModalProps {
@@ -30,6 +33,7 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
   const [activeTab, setActiveTab] = useState<'overview' | 'automation' | 'template' | 'json' | 'troubleshooting'>('overview');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -38,6 +42,36 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
     showNotification(t('copied', 'Copied to clipboard!'), 'success');
+  };
+
+  const handleDownloadPackage = async () => {
+    setIsDownloading(true);
+    try {
+      const resp = await fetch(
+        (window.omniPosConfig?.restUrl || '/wp-json/') + 'omni-pos/v1/admin/nicelabel/download',
+        {
+          headers: {
+            'X-WP-Nonce': window.omniPosConfig?.nonce || '',
+          },
+        }
+      );
+      const data = await resp.json();
+      if (data && data.download_url) {
+        const a = document.createElement('a');
+        a.href = data.download_url;
+        a.download = 'omni-nicelabel-ready-package.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showNotification('მზა NiceLabel პაკეტი ჩამოიტვირთა!', 'success');
+      } else {
+        alert('Could not download NiceLabel package.');
+      }
+    } catch (e: any) {
+      alert('Download error: ' + e.message);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleTestPrint = async () => {
@@ -119,11 +153,41 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
           </button>
         </div>
 
+        {/* 1-Click Ready Solution Download Banner */}
+        <div className="px-6 py-3.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <FolderArchive className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="font-bold text-xs flex items-center gap-1.5">
+                <span>📦 მზა კონფიგურაციის პაკეტი (100% აწყობილი)</span>
+                <span className="text-[10px] px-2 py-0.2 bg-amber-400 text-slate-900 font-black rounded-full uppercase">
+                  რეკომენდებული
+                </span>
+              </div>
+              <p className="text-[11px] text-white/90 mt-0.5">
+                ჩამოტვირთეთ მზა <code className="bg-black/20 px-1 py-0.5 rounded font-mono">.misx</code> Solution და <code className="bg-black/20 px-1 py-0.5 rounded font-mono">.nlbl</code> შაბლონი (ხელით აწყობა აღარ დაგჭირდებათ).
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDownloadPackage}
+            disabled={isDownloading}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-slate-100 active:scale-95 text-indigo-900 font-bold text-xs shadow-md flex items-center justify-center space-x-1.5 shrink-0 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {isDownloading ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            <span>{isDownloading ? 'გადმოწერა...' : '⬇️ მზა Solution-ის ჩამოტვირთვა (.ZIP)'}</span>
+          </button>
+        </div>
+
         {/* Navigation Tabs */}
         <div className="px-6 border-b border-slate-100 dark:border-slate-800 flex items-center space-x-2 overflow-x-auto bg-slate-50/40 dark:bg-slate-800/20 custom-scrollbar">
           {[
-            { id: 'overview', label: '1. მიმოხილვა & პრინციპი', icon: Sparkles },
-            { id: 'automation', label: '2. NiceLabel Automation (HTTP Trigger)', icon: Server },
+            { id: 'overview', label: '1. მზა ფაილების გახსნა (10 წამში)', icon: Sparkles },
+            { id: 'automation', label: '2. ხელით გამართვა (Manual Setup)', icon: Server },
             { id: 'template', label: '3. შაბლონის ცვლადები (.nlbl)', icon: Tag },
             { id: 'json', label: '4. JSON სტრუქტურა', icon: Code2 },
             { id: 'troubleshooting', label: '5. პრობლემების მოგვარება', icon: Zap },
@@ -149,21 +213,22 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
 
         {/* Content Body */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar text-slate-800 dark:text-slate-200 text-xs">
-          {/* TAB 1: OVERVIEW */}
+          {/* TAB 1: OVERVIEW & 1-CLICK FAST TRACK */}
           {activeTab === 'overview' && (
             <div className="space-y-5 animate-fadeIn">
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800/60 flex items-start space-x-3.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md">
-                  <Zap className="w-5 h-5" />
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 space-y-2">
+                <div className="font-bold text-sm flex items-center gap-2">
+                  <PlayCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span>როგორ გავუშვათ მზა ფაილი 3 ნაბიჯში (ხელით აწყობის გარეშე):</span>
                 </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                    როგორ მუშაობს Omni POS + NiceLabel ინტეგრაცია?
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-300 mt-1 leading-relaxed text-[11px]">
-                    Omni POS Chrome Extension უკავშირდება თქვენს ლოკალურ კომპიუტერზე გაშვებულ <strong>NiceLabel Automation</strong> სერვისს (ნაგულისხმევად <code className="text-blue-500 font-mono">http://127.0.0.1:56424/print</code>). ღილაკზე 1 დაჭერით შერჩეული პროდუქტების მონაცემები (დასახელება, ფასი, შტრიხკოდი, რაოდენობა) გადაეცემა NiceLabel-ს და მომენტალურად იბეჭდება თერმოპრინტერზე.
-                  </p>
-                </div>
+                <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed pt-1">
+                  <li>დააჭირეთ ზემოთ ლურჯ ღილაკს <strong>[ ⬇️ მზა Solution-ის ჩამოტვირთვა (.ZIP) ]</strong> და ამოაარქივეთ.</li>
+                  <li>NiceLabel Automation Builder-ში დააჭირეთ <strong>File ➔ Open</strong> და აირჩიეთ ფაილი: <code className="bg-emerald-100 dark:bg-emerald-900 px-1.5 py-0.5 rounded font-mono font-bold">Omni_POS_NiceLabel_Automation.misx</code>.</li>
+                  <li>დააჭირეთ ზედა მენიუში <strong>Start Service</strong> (ან Run Preview).</li>
+                </ol>
+                <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold pt-1">
+                  🎉 მზადაა! Automation უკვე 100%-ით გაწერილია და მზადაა ბეჭდვისთვის!
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -199,7 +264,7 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
             <div className="space-y-4 animate-fadeIn">
               <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                 <Server className="w-4 h-4 text-blue-500" />
-                <span>NiceLabel Automation Builder-ის გამართვა (HTTP Trigger)</span>
+                <span>NiceLabel Automation Builder-ის ხელით გამართვა (HTTP Trigger)</span>
               </div>
 
               <div className="space-y-3">
@@ -243,10 +308,10 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
                     ნაბიჯი 3: Action-ების დამატება (Filter Data & Open and Print)
                   </div>
                   <ol className="list-decimal list-inside space-y-1 text-[11px] leading-relaxed">
-                    <li>Trigger Actions-ში დაამატეთ <strong>Use Data Filter</strong> (JSON Filter).</li>
+                    <li>Trigger Actions-ში დაამატეთ <strong>Use Data Filter</strong> (Data Source: <code className="font-bold">Use data received by the trigger</code>).</li>
+                    <li>დააჭირეთ <strong>[ + Add ]</strong> Filter ➔ შექმენით JSON Filter სახელად <code className="font-bold">Omni_JSON_Filter</code>.</li>
                     <li>შემდეგ დაამატეთ <strong>Open Document and Print</strong>.</li>
-                    <li>მიუთითეთ თქვენი შაბლონის ფაილის გზა (მაგ. <code className="text-slate-800 dark:text-slate-200 font-mono">C:\Labels\product_label.nlbl</code>).</li>
-                    <li>მონიშნეთ <strong>Print automatically upon trigger</strong>.</li>
+                    <li>მიუთითეთ თქვენი შაბლონის ფაილის გზა (მაგ. <code className="text-slate-800 dark:text-slate-200 font-mono">product_label.nlbl</code>).</li>
                   </ol>
                 </div>
               </div>
@@ -261,7 +326,7 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
                 <span>NiceLabel Designer (.nlbl) შაბლონის ცვლადები</span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                NiceLabel Designer-ში შექმენით შემდეგი სახელების მქონე ცვლადები (Variables) და მიაბით თქვენს შტრიხკოდს და ტექსტურ ველებს:
+                ჩვენს მზა <code className="font-bold text-indigo-500">product_label.nlbl</code> შაბლონში ეს ცვლადები უკვე ჩაშენებულია:
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -339,7 +404,7 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
                   ❓ რა ვქნა, თუ ბეჭდვისას მიწერს "Could not connect to NiceLabel"?
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                  დარწმუნდით, რომ <strong>NiceLabel Automation Service</strong> გაშვებულია Windows Services-ში და HTTP Trigger უსმენს მითითებულ პორტს (<code className="font-mono text-blue-500">56424</code>).
+                  დარწმუნდით, რომ Automation Builder-ში გაშვებულია სერვისი (Start Service) და უსმენს პორტს (<code className="font-mono text-blue-500">56424</code>).
                 </p>
               </div>
 
@@ -351,30 +416,33 @@ export const NiceLabelDocsModal: React.FC<NiceLabelDocsModalProps> = ({ isOpen, 
                   გადადით <code className="font-mono text-indigo-500">chrome://extensions</code>-ზე, ჩართეთ Developer mode და მონიშნეთ Omni POS-ის Extension საქაღალდე. Omni POS-ის ჰედერში გამოჩნდება მწვანე სტატუსი.
                 </p>
               </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 space-y-1.5">
-                <div className="font-bold text-xs text-slate-900 dark:text-white">
-                  ❓ შეიძლება თუ არა სხვადასხვა პრინტერზე გაგზავნა?
-                </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                  დიახ! Admin Hub ➔ Settings ➔ Hardware-ში შეგიძლიათ მიუთითოთ კონკრეტული პრინტერის სახელი, ან დატოვოთ ცარიელი და NiceLabel გამოიყენებს შაბლონში მითითებულ ნაგულისხმევ პრინტერს.
-                </p>
-              </div>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/80 dark:bg-slate-800/50">
-          <button
-            type="button"
-            onClick={handleTestPrint}
-            disabled={isTesting}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 flex items-center justify-center space-x-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-          >
-            {isTesting ? <RotateCw className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
-            <span>{isTesting ? 'იგზავნება NiceLabel-ზე...' : '🏷️ სატესტო ბეჭდვა NiceLabel-ზე'}</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleDownloadPackage}
+              disabled={isDownloading}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center justify-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              <span>⬇️ მზა Solution (.ZIP)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTestPrint}
+              disabled={isTesting}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-sm flex items-center justify-center space-x-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {isTesting ? <RotateCw className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
+              <span>{isTesting ? 'იგზავნება...' : '🏷️ სატესტო ბეჭდვა'}</span>
+            </button>
+          </div>
 
           <button
             onClick={onClose}
