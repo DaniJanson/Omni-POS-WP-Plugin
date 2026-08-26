@@ -265,7 +265,7 @@ class Omni_POS_Updater {
      * Execute 1-Click Update from Omni POS Admin
      */
     public function perform_direct_update() {
-        if (!current_user_can('update_plugins')) {
+        if (!current_user_can('update_plugins') && !current_user_can('manage_options')) {
             return new WP_Error('forbidden', 'You do not have permission to update plugins.');
         }
 
@@ -279,29 +279,85 @@ class Omni_POS_Updater {
             return new WP_Error('no_download_url', 'No download URL available in the latest release.');
         }
 
-        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
         require_once ABSPATH . 'wp-admin/includes/misc.php';
 
-        $skin = new WP_Ajax_Upgrader_Skin();
-        $upgrader = new Plugin_Upgrader($skin);
+        // Initialize Filesystem
+        WP_Filesystem();
+        global $wp_filesystem;
 
-        // Append token if private repo
-        if (!empty($this->access_token) && strpos($download_url, 'api.github.com') !== false) {
-            $download_url = add_query_arg('access_token', $this->access_token, $download_url);
+        if (!$wp_filesystem) {
+            return new WP_Error('filesystem_error', 'Could not initialize WordPress filesystem.');
         }
 
-        $result = $upgrader->upgrade($this->plugin_file);
+        // Set User-Agent and auth for GitHub download
+        $token = $this->access_token;
+        $auth_filter = function($args, $url) use ($token) {
+            $args['headers']['User-Agent'] = 'WordPress/Omni-POS-Updater';
+            if (!empty($token) && strpos($url, 'github.com') !== false) {
+                $args['headers']['Authorization'] = 'token ' . $token;
+            }
+            return $args;
+        };
+        add_filter('http_request_args', $auth_filter, 10, 2);
 
-        if (is_wp_error($result)) {
-            return $result;
-        } elseif ($result === false) {
-            return new WP_Error('upgrade_failed', 'Plugin upgrade failed during installation.');
+        // 1. Download zip package
+        $temp_file = download_url($download_url, 300);
+        remove_filter('http_request_args', $auth_filter, 10);
+
+        if (is_wp_error($temp_file)) {
+            return new WP_Error('download_failed', 'Failed to download release zip: ' . $temp_file->get_error_message());
         }
 
-        // Clear cached transients
+        // 2. Unpack to temporary upgrade folder
+        $upgrade_dir = WP_CONTENT_DIR . '/upgrade/omni-pos-update-' . time();
+        wp_mkdir_p($upgrade_dir);
+
+        $unzip_result = unzip_file($temp_file, $upgrade_dir);
+        @unlink($temp_file);
+
+        if (is_wp_error($unzip_result)) {
+            $wp_filesystem->delete($upgrade_dir, true);
+            return new WP_Error('unzip_failed', 'Failed to extract update zip: ' . $unzip_result->get_error_message());
+        }
+
+        // 3. Locate folder containing omni-pos.php
+        $source_dir = $upgrade_dir;
+        $files = scandir($upgrade_dir);
+        foreach ($files as $file) {
+            if ($file !== '.' && $file !== '..' && is_dir($upgrade_dir . '/' . $file)) {
+                if (file_exists($upgrade_dir . '/' . $file . '/omni-pos.php')) {
+                    $source_dir = $upgrade_dir . '/' . $file;
+                    break;
+                }
+            }
+        }
+
+        if (!file_exists($source_dir . '/omni-pos.php')) {
+            $wp_filesystem->delete($upgrade_dir, true);
+            return new WP_Error('invalid_package', 'The downloaded update package is missing omni-pos.php.');
+        }
+
+        // 4. Copy files to destination plugin folder
+        $destination = WP_PLUGIN_DIR . '/' . $this->plugin_slug;
+        $copy_result = copy_dir($source_dir, $destination);
+
+        // 5. Clean up temporary upgrade directory
+        $wp_filesystem->delete($upgrade_dir, true);
+
+        if (is_wp_error($copy_result)) {
+            return new WP_Error('copy_failed', 'Failed to overwrite plugin files: ' . $copy_result->get_error_message());
+        }
+
+        // 6. Clear transients & opcache
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+        }
         delete_transient('omni_pos_github_release');
+        if (function_exists('wp_clean_plugins_cache')) {
+            wp_clean_plugins_cache();
+        }
 
         return array(
             'success'        => true,
