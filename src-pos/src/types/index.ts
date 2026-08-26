@@ -217,8 +217,21 @@ export interface AdminDashboardStats {
   currency_symbol: string;
 }
 
+export interface CurrencyOption {
+  code: string;
+  name: string;
+  symbol: string;
+}
+
 export interface AdminSettings {
   inventory_mode: 'woocommerce' | 'omni_pos';
+  currency?: string;
+  currency_symbol?: string;
+  currency_pos?: 'left' | 'right' | 'left_space' | 'right_space';
+  price_decimals?: number;
+  price_decimal_sep?: string;
+  price_thousand_sep?: string;
+  available_currencies?: CurrencyOption[];
   store_phone: string;
   store_tax_id: string;
   receipt_header: string;

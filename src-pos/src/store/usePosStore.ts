@@ -263,6 +263,14 @@ export const usePosStore = create<PosState>((set, get) => ({
       const resp = await posApi.getAdminSettings();
       if (resp.success && resp.settings) {
         set({ adminSettings: resp.settings });
+        if ((resp as any).store && get().initData) {
+          set({
+            initData: {
+              ...get().initData!,
+              store: (resp as any).store,
+            },
+          });
+        }
       }
     } catch (err: any) {
       console.error('Fetch Admin Settings Error:', err);
@@ -274,6 +282,14 @@ export const usePosStore = create<PosState>((set, get) => ({
       const resp = await posApi.updateAdminSettings(settings);
       if (resp.success && resp.settings) {
         set({ adminSettings: resp.settings });
+        if ((resp as any).store && get().initData) {
+          set({
+            initData: {
+              ...get().initData!,
+              store: (resp as any).store,
+            },
+          });
+        }
         sound.setEnabled(resp.settings.sound_effects);
         get().showNotification(t('settings_saved', 'Settings saved successfully!'), 'success');
         return true;

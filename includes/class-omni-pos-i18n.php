@@ -497,6 +497,22 @@ class Omni_POS_I18n {
 			'repo_slug_label'       => array( 'cat' => 'updates', 'en' => 'GitHub Repository (owner/repo)' ),
 			'github_token_label'    => array( 'cat' => 'updates', 'en' => 'Personal Access Token (For Private Repositories)' ),
 			'save_repo_btn'         => array( 'cat' => 'updates', 'en' => 'Save Repo Settings' ),
+
+			// ==========================================
+			// 16. Currency & Price Formatting
+			// ==========================================
+			'currency_settings'     => array( 'cat' => 'settings', 'en' => 'Currency & Price Formatting' ),
+			'currency_settings_desc'=> array( 'cat' => 'settings', 'en' => 'Configure store currency, symbol position, and decimal separators synchronized with WooCommerce.' ),
+			'currency_label'        => array( 'cat' => 'settings', 'en' => 'Store Currency' ),
+			'currency_pos_label'    => array( 'cat' => 'settings', 'en' => 'Currency Position' ),
+			'decimals_label'        => array( 'cat' => 'settings', 'en' => 'Number of Decimals' ),
+			'decimal_sep_label'     => array( 'cat' => 'settings', 'en' => 'Decimal Separator' ),
+			'thousand_sep_label'    => array( 'cat' => 'settings', 'en' => 'Thousand Separator' ),
+			'currency_preview'      => array( 'cat' => 'settings', 'en' => 'Live Price Preview' ),
+			'pos_left'              => array( 'cat' => 'settings', 'en' => 'Left (₾10.00)' ),
+			'pos_right'             => array( 'cat' => 'settings', 'en' => 'Right (10.00₾)' ),
+			'pos_left_space'        => array( 'cat' => 'settings', 'en' => 'Left with space (₾ 10.00)' ),
+			'pos_right_space'       => array( 'cat' => 'settings', 'en' => 'Right with space (10.00 ₾)' ),
 		);
 
 		// Merge user-defined custom strings created via UI
@@ -940,6 +956,18 @@ class Omni_POS_I18n {
 				'repo_slug_label'       => 'GitHub რეპოზიტორია (owner/repo)',
 				'github_token_label'    => 'პირადი Access Token (დახურული რეპოზიტორიისთვის)',
 				'save_repo_btn'         => 'რეპოზიტორიის შენახვა',
+				'currency_settings'     => 'ვალუტა & ფასის ფორმატირება',
+				'currency_settings_desc'=> 'მაღაზიის ვალუტის, სიმბოლოს პოზიციისა და ათწილადების მართვა (სინქრონიზებულია WooCommerce-თან).',
+				'currency_label'        => 'მაღაზიის ვალუტა (Currency)',
+				'currency_pos_label'    => 'ვალუტის სიმბოლოს პოზიცია',
+				'decimals_label'        => 'ათწილადების რაოდენობა',
+				'decimal_sep_label'     => 'ათწილადის გამყოფი სიმბოლო',
+				'thousand_sep_label'    => 'ათასეულის გამყოფი სიმბოლო',
+				'currency_preview'      => 'ფასის ცოცხალი ნიმუში',
+				'pos_left'              => 'მარცხნივ (₾10.00)',
+				'pos_right'             => 'მარჯვნივ (10.00₾)',
+				'pos_left_space'        => 'მარცხნივ დაშორებით (₾ 10.00)',
+				'pos_right_space'       => 'მარჯვნივ დაშორებით (10.00 ₾)',
 			),
 
 			// German / Deutsch

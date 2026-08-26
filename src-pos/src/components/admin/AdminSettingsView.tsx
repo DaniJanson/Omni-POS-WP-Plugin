@@ -19,6 +19,13 @@ export const AdminSettingsView: React.FC = () => {
 
   const [formData, setFormData] = useState<AdminSettings>({
     inventory_mode: 'woocommerce',
+    currency: 'GEL',
+    currency_symbol: '₾',
+    currency_pos: 'right_space',
+    price_decimals: 2,
+    price_decimal_sep: '.',
+    price_thousand_sep: ' ',
+    available_currencies: [],
     store_phone: '',
     store_tax_id: '',
     receipt_header: "Thank you for your purchase!\nFast & Reliable Service",
@@ -47,6 +54,42 @@ export const AdminSettingsView: React.FC = () => {
       setFormData(adminSettings);
     }
   }, [adminSettings]);
+
+  const handleCurrencyChange = (newCode: string) => {
+    const matched = formData.available_currencies?.find((c) => c.code === newCode);
+    const newSymbol = matched ? matched.symbol : (newCode === 'USD' ? '$' : newCode === 'EUR' ? '€' : newCode === 'GBP' ? '£' : '₾');
+    setFormData({
+      ...formData,
+      currency: newCode,
+      currency_symbol: newSymbol,
+    });
+  };
+
+  const getPricePreview = () => {
+    const amount = 1485.5;
+    const decimals = formData.price_decimals ?? 2;
+    const dSep = formData.price_decimal_sep ?? '.';
+    const tSep = formData.price_thousand_sep ?? ' ';
+    const sym = formData.currency_symbol || '₾';
+    const pos = formData.currency_pos || 'right_space';
+
+    const fixed = amount.toFixed(decimals);
+    const parts = fixed.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, tSep);
+    const formatted = parts.join(dSep);
+
+    switch (pos) {
+      case 'left':
+        return `${sym}${formatted}`;
+      case 'right':
+        return `${formatted}${sym}`;
+      case 'left_space':
+        return `${sym} ${formatted}`;
+      case 'right_space':
+      default:
+        return `${formatted} ${sym}`;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +137,135 @@ export const AdminSettingsView: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 1. Inventory & Management Mode Switcher */}
+        {/* 1. Currency & Price Formatting (WooCommerce Synchronized) */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+                {formData.currency_symbol || '₾'}
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                  {t('currency_settings', 'Currency & Price Formatting')}
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {t('currency_settings_desc', 'Configure store currency, symbol position, and decimal separators synchronized with WooCommerce.')}
+                </p>
+              </div>
+            </div>
+
+            {/* Live Price Preview Badge */}
+            <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80">
+              <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 tracking-wider">
+                {t('currency_preview', 'Preview')}:
+              </span>
+              <span className="text-xs font-mono font-black text-emerald-800 dark:text-emerald-300">
+                {getPricePreview()}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+            {/* Store Currency */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t('currency_label', 'Store Currency')}
+              </label>
+              <select
+                value={formData.currency || 'GEL'}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {formData.available_currencies && formData.available_currencies.length > 0 ? (
+                  formData.available_currencies.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name} ({c.symbol})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="GEL">Georgian Lari (₾)</option>
+                    <option value="USD">United States Dollar ($)</option>
+                    <option value="EUR">Euro (€)</option>
+                    <option value="GBP">British Pound (£)</option>
+                    <option value="TRY">Turkish Lira (₺)</option>
+                    <option value="RUB">Russian Ruble (₽)</option>
+                    <option value="UAH">Ukrainian Hryvnia (₴)</option>
+                    <option value="AZN">Azerbaijani Manat (₼)</option>
+                    <option value="AMD">Armenian Dram (֏)</option>
+                  </>
+                )}
+              </select>
+            </div>
+
+            {/* Currency Symbol Position */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t('currency_pos_label', 'Currency Position')}
+              </label>
+              <select
+                value={formData.currency_pos || 'right_space'}
+                onChange={(e) => setFormData({ ...formData, currency_pos: e.target.value as any })}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="right_space">{t('pos_right_space', 'Right with space (10.00 ₾)')}</option>
+                <option value="right">{t('pos_right', 'Right (10.00₾)')}</option>
+                <option value="left_space">{t('pos_left_space', 'Left with space (₾ 10.00)')}</option>
+                <option value="left">{t('pos_left', 'Left (₾10.00)')}</option>
+              </select>
+            </div>
+
+            {/* Decimals Count */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t('decimals_label', 'Number of Decimals')}
+              </label>
+              <select
+                value={formData.price_decimals ?? 2}
+                onChange={(e) => setFormData({ ...formData, price_decimals: parseInt(e.target.value) || 0 })}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value={0}>0 (e.g. 100 ₾)</option>
+                <option value={2}>2 (e.g. 100.50 ₾)</option>
+                <option value={3}>3 (e.g. 100.500 ₾)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            {/* Decimal Separator */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t('decimal_sep_label', 'Decimal Separator')}
+              </label>
+              <input
+                type="text"
+                maxLength={2}
+                value={formData.price_decimal_sep ?? '.'}
+                onChange={(e) => setFormData({ ...formData, price_decimal_sep: e.target.value })}
+                placeholder="."
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Thousand Separator */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {t('thousand_sep_label', 'Thousand Separator')}
+              </label>
+              <input
+                type="text"
+                maxLength={2}
+                value={formData.price_thousand_sep ?? ' '}
+                onChange={(e) => setFormData({ ...formData, price_thousand_sep: e.target.value })}
+                placeholder="Space or ,"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Inventory & Management Mode Switcher */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">

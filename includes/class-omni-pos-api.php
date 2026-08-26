@@ -1049,27 +1049,51 @@ class Omni_POS_API {
 	 * Retrieve all POS & Management settings
 	 */
 	public static function get_admin_settings( $request ) {
+		$all_currencies = function_exists( 'get_woocommerce_currencies' ) ? get_woocommerce_currencies() : array();
+		$available_currencies = array();
+		foreach ( $all_currencies as $code => $name ) {
+			$symbol = function_exists( 'get_woocommerce_currency_symbol' ) ? html_entity_decode( get_woocommerce_currency_symbol( $code ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : $code;
+			$available_currencies[] = array(
+				'code'   => $code,
+				'name'   => $name,
+				'symbol' => $symbol,
+			);
+		}
+
+		$currency_code = function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'GEL';
+		$currency_symbol = function_exists( 'get_woocommerce_currency_symbol' ) ? html_entity_decode( get_woocommerce_currency_symbol(), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : '₾';
+
 		$settings = array(
-			'inventory_mode'      => get_option( 'omni_pos_inventory_mode', 'woocommerce' ),
-			'store_phone'         => get_option( 'omni_pos_store_phone', '' ),
-			'store_tax_id'        => get_option( 'omni_pos_store_tax_id', '' ),
-			'receipt_header'      => get_option( 'omni_pos_receipt_header', __( "Thank you for your purchase!\nFast & Reliable Service", 'omni-pos' ) ),
-			'receipt_footer'      => get_option( 'omni_pos_receipt_footer', __( 'Please keep this receipt for warranty and returns.', 'omni-pos' ) ),
-			'auto_print'          => get_option( 'omni_pos_auto_print', 'no' ) === 'yes',
-			'sound_effects'       => get_option( 'omni_pos_sound_effects', 'yes' ) === 'yes',
-			'low_stock_threshold' => (int) get_option( 'omni_pos_low_stock_threshold', 5 ),
-			'enable_discounts'    => get_option( 'omni_pos_enable_discounts', 'yes' ) === 'yes',
-			'enable_custom_price' => get_option( 'omni_pos_enable_custom_price', 'yes' ) === 'yes',
-			'receipt_printer'     => get_option( 'omni_pos_receipt_printer', '' ),
-			'label_printer'       => get_option( 'omni_pos_label_printer', '' ),
-			'cash_drawer_kick'    => get_option( 'omni_pos_cash_drawer_kick', 'yes' ) === 'yes',
-			'auto_paper_cut'      => get_option( 'omni_pos_auto_paper_cut', 'yes' ) === 'yes',
-			'silent_print'        => get_option( 'omni_pos_silent_print', 'yes' ) === 'yes',
+			'inventory_mode'       => get_option( 'omni_pos_inventory_mode', 'woocommerce' ),
+			'currency'             => $currency_code,
+			'currency_symbol'      => $currency_symbol,
+			'currency_pos'         => get_option( 'woocommerce_currency_pos', 'right_space' ),
+			'price_decimals'       => function_exists( 'wc_get_price_decimals' ) ? (int) wc_get_price_decimals() : 2,
+			'price_decimal_sep'    => function_exists( 'wc_get_price_decimal_separator' ) ? wc_get_price_decimal_separator() : '.',
+			'price_thousand_sep'   => function_exists( 'wc_get_price_thousand_separator' ) ? wc_get_price_thousand_separator() : ' ',
+			'available_currencies' => $available_currencies,
+			'store_phone'          => get_option( 'omni_pos_store_phone', '' ),
+			'store_tax_id'         => get_option( 'omni_pos_store_tax_id', '' ),
+			'receipt_header'       => get_option( 'omni_pos_receipt_header', __( "Thank you for your purchase!\nFast & Reliable Service", 'omni-pos' ) ),
+			'receipt_footer'       => get_option( 'omni_pos_receipt_footer', __( 'Please keep this receipt for warranty and returns.', 'omni-pos' ) ),
+			'auto_print'           => get_option( 'omni_pos_auto_print', 'no' ) === 'yes',
+			'sound_effects'        => get_option( 'omni_pos_sound_effects', 'yes' ) === 'yes',
+			'low_stock_threshold'  => (int) get_option( 'omni_pos_low_stock_threshold', 5 ),
+			'enable_discounts'     => get_option( 'omni_pos_enable_discounts', 'yes' ) === 'yes',
+			'enable_custom_price'  => get_option( 'omni_pos_enable_custom_price', 'yes' ) === 'yes',
+			'receipt_printer'      => get_option( 'omni_pos_receipt_printer', '' ),
+			'label_printer'        => get_option( 'omni_pos_label_printer', '' ),
+			'cash_drawer_kick'     => get_option( 'omni_pos_cash_drawer_kick', 'yes' ) === 'yes',
+			'auto_paper_cut'       => get_option( 'omni_pos_auto_paper_cut', 'yes' ) === 'yes',
+			'silent_print'         => get_option( 'omni_pos_silent_print', 'yes' ) === 'yes',
 		);
+
+		$init_data = Omni_POS_Helper::get_pos_init_data();
 
 		return rest_ensure_response( array(
 			'success'  => true,
 			'settings' => $settings,
+			'store'    => isset( $init_data['store'] ) ? $init_data['store'] : null,
 		) );
 	}
 
@@ -1085,6 +1109,31 @@ class Omni_POS_API {
 			if ( in_array( $mode, array( 'woocommerce', 'omni_pos' ), true ) ) {
 				update_option( 'omni_pos_inventory_mode', $mode );
 			}
+		}
+
+		// WooCommerce Currency & Formatting Synchronization
+		if ( ! empty( $params['currency'] ) ) {
+			$currency = sanitize_text_field( $params['currency'] );
+			update_option( 'woocommerce_currency', $currency );
+		}
+
+		if ( isset( $params['currency_pos'] ) ) {
+			$pos = sanitize_text_field( $params['currency_pos'] );
+			if ( in_array( $pos, array( 'left', 'right', 'left_space', 'right_space' ), true ) ) {
+				update_option( 'woocommerce_currency_pos', $pos );
+			}
+		}
+
+		if ( isset( $params['price_decimals'] ) ) {
+			update_option( 'woocommerce_price_num_decimals', max( 0, min( 6, (int) $params['price_decimals'] ) ) );
+		}
+
+		if ( isset( $params['price_decimal_sep'] ) ) {
+			update_option( 'woocommerce_price_decimal_sep', sanitize_text_field( $params['price_decimal_sep'] ) );
+		}
+
+		if ( isset( $params['price_thousand_sep'] ) ) {
+			update_option( 'woocommerce_price_thousand_sep', (string) $params['price_thousand_sep'] );
 		}
 
 		if ( isset( $params['store_phone'] ) ) {
