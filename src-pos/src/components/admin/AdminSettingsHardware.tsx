@@ -3,6 +3,7 @@ import { niceLabelClient } from '../../services/niceLabelClient';
 import { usePosStore } from '../../store/usePosStore';
 import { ExtensionSetupModal } from '../hardware/ExtensionSetupModal';
 import { NiceLabelDocsModal } from './NiceLabelDocsModal';
+import { AdminMigrationHubModal } from './AdminMigrationHubModal';
 import { t } from '../../utils/i18n';
 import type { AdminSettings } from '../../types';
 import {
@@ -17,6 +18,7 @@ import {
   Tag,
   Sliders,
   BookOpen,
+  Database,
 } from 'lucide-react';
 
 interface AdminSettingsHardwareProps {
@@ -33,6 +35,7 @@ export const AdminSettingsHardware: React.FC<AdminSettingsHardwareProps> = ({
   const [isExtInstalled, setIsExtInstalled] = useState(false);
   const [isExtSetupOpen, setIsExtSetupOpen] = useState(false);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
+  const [isMigrationOpen, setIsMigrationOpen] = useState(false);
   const [isTestingNiceLabel, setIsTestingNiceLabel] = useState(false);
   const [isTestingPrint, setIsTestingPrint] = useState(false);
   const [isTestingDrawer, setIsTestingDrawer] = useState(false);
@@ -306,6 +309,15 @@ export const AdminSettingsHardware: React.FC<AdminSettingsHardwareProps> = ({
             <BookOpen className="w-4 h-4" />
             <span>{t('view_nicelabel_docs', '📖 NiceLabel ინსტრუქცია')}</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setIsMigrationOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center space-x-2 transition-all active:scale-95 shadow-md shadow-indigo-500/20 cursor-pointer"
+          >
+            <Database className="w-4 h-4" />
+            <span>{t('migration_hub_btn', '🔄 VitePOS ➔ Omni მიგრაცია')}</span>
+          </button>
         </div>
       </div>
 
@@ -322,6 +334,12 @@ export const AdminSettingsHardware: React.FC<AdminSettingsHardwareProps> = ({
       <NiceLabelDocsModal
         isOpen={isDocsOpen}
         onClose={() => setIsDocsOpen(false)}
+      />
+
+      {/* VitePOS Migration Hub Modal */}
+      <AdminMigrationHubModal
+        isOpen={isMigrationOpen}
+        onClose={() => setIsMigrationOpen(false)}
       />
     </div>
   );

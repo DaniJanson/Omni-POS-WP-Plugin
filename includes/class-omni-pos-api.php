@@ -452,6 +452,27 @@ class Omni_POS_API {
 			'callback'            => array( __CLASS__, 'admin_download_nicelabel_zip' ),
 			'permission_callback' => '__return_true',
 		) );
+
+		// 39. VitePOS Migration - Discovery & Stats
+		register_rest_route( self::NAMESPACE, '/admin/migration/stats', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'admin_get_migration_stats' ),
+			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
+		) );
+
+		// 40. VitePOS Migration - Run Migration with Pre-Snapshot
+		register_rest_route( self::NAMESPACE, '/admin/migration/run', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'admin_run_migration' ),
+			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
+		) );
+
+		// 41. VitePOS Migration - Safe Rollback
+		register_rest_route( self::NAMESPACE, '/admin/migration/rollback', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'admin_rollback_migration' ),
+			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
+		) );
 	}
 
 	/**
@@ -2915,6 +2936,65 @@ class Omni_POS_API {
 			) );
 		} catch ( \Throwable $e ) {
 			return new WP_Error( 'zip_failed', $e->getMessage(), array( 'status' => 500 ) );
+		}
+	}
+
+	/**
+	 * GET /omni-pos/v1/admin/migration/stats
+	 */
+	public static function admin_get_migration_stats( $request ) {
+		try {
+			$stats = Omni_POS_Migrator::get_migration_stats();
+			return rest_ensure_response( array(
+				'success' => true,
+				'data'    => $stats,
+			) );
+		} catch ( \Throwable $e ) {
+			return new WP_Error( 'migration_stats_error', $e->getMessage(), array( 'status' => 500 ) );
+		}
+	}
+
+	/**
+	 * POST /omni-pos/v1/admin/migration/run
+	 */
+	public static function admin_run_migration( $request ) {
+		try {
+			$params  = $request->get_json_params() ?: array();
+			$options = isset( $params['options'] ) && is_array( $params['options'] ) ? $params['options'] : array();
+			$result  = Omni_POS_Migrator::run_migration( $options );
+
+			return rest_ensure_response( array(
+				'success' => true,
+				'data'    => $result,
+			) );
+		} catch ( \Throwable $e ) {
+			return new WP_Error( 'migration_run_error', $e->getMessage(), array( 'status' => 500 ) );
+		}
+	}
+
+	/**
+	 * POST /omni-pos/v1/admin/migration/rollback
+	 */
+	public static function admin_rollback_migration( $request ) {
+		try {
+			$params      = $request->get_json_params() ?: array();
+			$snapshot_id = isset( $params['snapshot_id'] ) ? sanitize_text_field( $params['snapshot_id'] ) : '';
+
+			if ( empty( $snapshot_id ) ) {
+				return new WP_Error( 'missing_snapshot', 'Snapshot ID is required.', array( 'status' => 400 ) );
+			}
+
+			$result = Omni_POS_Migrator::rollback_migration( $snapshot_id );
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+
+			return rest_ensure_response( array(
+				'success' => true,
+				'data'    => $result,
+			) );
+		} catch ( \Throwable $e ) {
+			return new WP_Error( 'migration_rollback_error', $e->getMessage(), array( 'status' => 500 ) );
 		}
 	}
 }
