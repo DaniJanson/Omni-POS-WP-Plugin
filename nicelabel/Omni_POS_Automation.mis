@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<NiceWatchConfigurations Version="17.2">
+  <Configuration Name="Omni_POS_Print_Bridge" Description="Omni POS Automated Printing Service" Enabled="true">
+    <Triggers>
+      <Trigger Name="Omni_HTTP_Server" Type="HTTP" Enabled="true" Port="56424" Path="/print" Timeout="30" Method="POST">
+        <Actions>
+          <Action Name="Open_Omni_Label" Type="OpenLabel" Enabled="true" LabelPath="product_label.nlbl" RelativePath="true" UseDefaultPrinter="true" />
+          <Action Name="Print_Barcode_Label" Type="PrintLabel" Enabled="true" DefaultQuantity="1" PrintAllRecords="true" />
+        </Actions>
+      </Trigger>
+    </Triggers>
+  </Configuration>
+</NiceWatchConfigurations>
