@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePosStore } from '../../store/usePosStore';
 import { niceLabelClient, type NiceLabelItem } from '../../services/niceLabelClient';
+import { NiceLabelDocsModal } from './NiceLabelDocsModal';
 import { formatPrice } from '../../utils/format';
 import { t } from '../../utils/i18n';
 import type { Product } from '../../types';
@@ -21,6 +22,7 @@ import {
   Zap,
   Clock,
   Filter,
+  BookOpen,
 } from 'lucide-react';
 
 interface AdminBarcodeHubModalProps {
@@ -47,6 +49,7 @@ export const AdminBarcodeHubModal: React.FC<AdminBarcodeHubModalProps> = ({
 
   const [queue, setQueue] = useState<QueuedItem[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [printFeedback, setPrintFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   const [templateName, setTemplateName] = useState('product_label.nlbl');
@@ -201,12 +204,23 @@ export const AdminBarcodeHubModal: React.FC<AdminBarcodeHubModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsDocsOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>{t('nicelabel_docs_btn', '📖 NiceLabel ინსტრუქცია')}</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Main Content (2-Column Grid) */}
@@ -553,6 +567,12 @@ export const AdminBarcodeHubModal: React.FC<AdminBarcodeHubModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* NiceLabel Documentation Modal */}
+      <NiceLabelDocsModal
+        isOpen={isDocsOpen}
+        onClose={() => setIsDocsOpen(false)}
+      />
     </div>
   );
 };

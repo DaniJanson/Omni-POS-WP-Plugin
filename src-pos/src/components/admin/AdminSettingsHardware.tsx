@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { niceLabelClient } from '../../services/niceLabelClient';
 import { usePosStore } from '../../store/usePosStore';
 import { ExtensionSetupModal } from '../hardware/ExtensionSetupModal';
+import { NiceLabelDocsModal } from './NiceLabelDocsModal';
 import { t } from '../../utils/i18n';
 import type { AdminSettings } from '../../types';
 import {
@@ -15,6 +16,7 @@ import {
   Puzzle,
   Tag,
   Sliders,
+  BookOpen,
 } from 'lucide-react';
 
 interface AdminSettingsHardwareProps {
@@ -30,6 +32,7 @@ export const AdminSettingsHardware: React.FC<AdminSettingsHardwareProps> = ({
 
   const [isExtInstalled, setIsExtInstalled] = useState(false);
   const [isExtSetupOpen, setIsExtSetupOpen] = useState(false);
+  const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isTestingNiceLabel, setIsTestingNiceLabel] = useState(false);
   const [isTestingPrint, setIsTestingPrint] = useState(false);
   const [isTestingDrawer, setIsTestingDrawer] = useState(false);
@@ -142,7 +145,7 @@ export const AdminSettingsHardware: React.FC<AdminSettingsHardwareProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span
               className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-full border ${
                 isExtInstalled
@@ -155,10 +158,19 @@ export const AdminSettingsHardware: React.FC<AdminSettingsHardwareProps> = ({
 
             <button
               type="button"
+              onClick={() => setIsDocsOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>{t('nicelabel_docs_btn', '📖 NiceLabel გზამკვლევი')}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setIsExtSetupOpen(true)}
               className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 text-xs font-bold transition-all cursor-pointer"
             >
-              {isExtInstalled ? t('reconnect_guide', 'Reconnect / Guide') : t('install_extension_btn', 'Install Extension')}
+              {isExtInstalled ? t('reconnect_guide', 'Extension Guide') : t('install_extension_btn', 'Install Extension')}
             </button>
           </div>
         </div>
@@ -285,6 +297,15 @@ export const AdminSettingsHardware: React.FC<AdminSettingsHardwareProps> = ({
             {isTestingNiceLabel ? <RotateCw className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
             <span>{isTestingNiceLabel ? t('testing', 'Testing...') : t('test_nicelabel_btn', '🏷️ Test NiceLabel Print')}</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setIsDocsOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>{t('view_nicelabel_docs', '📖 NiceLabel ინსტრუქცია')}</span>
+          </button>
         </div>
       </div>
 
@@ -295,6 +316,12 @@ export const AdminSettingsHardware: React.FC<AdminSettingsHardwareProps> = ({
           setIsExtSetupOpen(false);
           checkExt();
         }}
+      />
+
+      {/* NiceLabel Docs & Setup Guide Modal */}
+      <NiceLabelDocsModal
+        isOpen={isDocsOpen}
+        onClose={() => setIsDocsOpen(false)}
       />
     </div>
   );

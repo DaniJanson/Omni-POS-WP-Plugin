@@ -313,6 +313,8 @@ class Omni_POS_I18n {
 			'install_extension_btn' => array( 'cat' => 'general', 'en' => 'Install Extension' ),
 			'reconnect_guide'       => array( 'cat' => 'general', 'en' => 'Reconnect / Guide' ),
 			'test_nicelabel_btn'    => array( 'cat' => 'general', 'en' => '🏷️ Test NiceLabel Print' ),
+			'nicelabel_docs_btn'    => array( 'cat' => 'general', 'en' => '📖 NiceLabel Guide & Docs' ),
+			'view_nicelabel_docs'   => array( 'cat' => 'general', 'en' => '📖 NiceLabel Guide' ),
 			'recent_10_products'    => array( 'cat' => 'general', 'en' => 'Recent 10 Products' ),
 			'search_products_barcode' => array( 'cat' => 'general', 'en' => 'Search by title, barcode, or SKU...' ),
 
@@ -815,6 +817,8 @@ class Omni_POS_I18n {
 				'test_drawer_btn'       => '💵 ფულის უჯრის ტესტი',
 				'test_print_sent'       => 'სატესტო ჩეკი გაეგზავნა პრინტერს!',
 				'test_drawer_sent'      => 'სიგნალი გაეგზავნა ფულის უჯრას!',
+				'nicelabel_docs_btn'    => '📖 NiceLabel ინსტრუქცია',
+				'view_nicelabel_docs'   => '📖 NiceLabel გზამკვლევი',
 				'no_shift_open'         => 'აქტიური ცვლა არ არის გახსნილი',
 				'active_shift'          => 'მიმდინარე სალაროს ცვლა',
 				'start_shift_prompt'    => 'გახსენით ცვლა საწყისი ნაღდი თანხით სალაროს აღრიცხვის დასაწყებად.',
