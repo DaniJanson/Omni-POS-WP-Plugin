@@ -438,6 +438,13 @@ class Omni_POS_API {
 			'callback'            => array( __CLASS__, 'admin_install_update' ),
 			'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
 		) );
+
+		// 37. Chrome Extension 1-Click Direct Zip Package Download
+		register_rest_route( self::NAMESPACE, '/admin/extension/download', array(
+			'methods'             => 'GET',
+			'callback'            => array( __CLASS__, 'admin_download_extension_zip' ),
+			'permission_callback' => '__return_true',
+		) );
 	}
 
 	/**
@@ -2813,6 +2820,50 @@ class Omni_POS_API {
 			return rest_ensure_response( $res );
 		} catch ( \Throwable $e ) {
 			return new WP_Error( 'install_update_failed', $e->getMessage(), array( 'status' => 500 ) );
+		}
+	}
+
+	/**
+	 * GET /omni-pos/v1/admin/extension/download
+	 * Generates/Serves a clean 1-click zip bundle of the Chrome extension
+	 */
+	public static function admin_download_extension_zip( $request ) {
+		try {
+			$ext_dir = OMNI_POS_PATH . 'extension';
+			if ( ! is_dir( $ext_dir ) ) {
+				return new WP_Error( 'missing_dir', 'Extension folder not found in plugin.' );
+			}
+
+			$upload_dir = wp_upload_dir();
+			$zip_file   = $upload_dir['basedir'] . '/omni-nicelabel-print-extension.zip';
+
+			if ( class_exists( 'ZipArchive' ) ) {
+				$zip = new ZipArchive();
+				if ( $zip->open( $zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE ) === true ) {
+					$files = new RecursiveIteratorIterator(
+						new RecursiveDirectoryIterator( $ext_dir, RecursiveDirectoryIterator::SKIP_DOTS ),
+						RecursiveIteratorIterator::LEAVES_ONLY
+					);
+					foreach ( $files as $name => $file ) {
+						if ( ! $file->isDir() ) {
+							$filePath     = $file->getRealPath();
+							$relativePath = substr( $filePath, strlen( $ext_dir ) + 1 );
+							$zip->addFile( $filePath, $relativePath );
+						}
+					}
+					$zip->close();
+				}
+			}
+
+			$download_url = $upload_dir['baseurl'] . '/omni-nicelabel-print-extension.zip?v=' . time();
+
+			return rest_ensure_response( array(
+				'success'      => true,
+				'download_url' => $download_url,
+				'filename'     => 'omni-nicelabel-print-extension.zip',
+			) );
+		} catch ( \Throwable $e ) {
+			return new WP_Error( 'zip_failed', $e->getMessage(), array( 'status' => 500 ) );
 		}
 	}
 }
