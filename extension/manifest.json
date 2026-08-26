@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Omni POS - NiceLabel Thermal Print Bridge",
+  "version": "1.0.0",
+  "description": "Direct silent thermal label printing and NiceLabel integration bridge for Omni POS & WooCommerce.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Omni POS NiceLabel Bridge"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

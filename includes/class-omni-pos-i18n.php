@@ -306,6 +306,27 @@ class Omni_POS_I18n {
 			'download_qz_manual'    => array( 'cat' => 'general', 'en' => 'Download Manually' ),
 			'qz_running_guide'      => array( 'cat' => 'general', 'en' => 'Make sure QZ Tray is running in your system tray (near clock). Click "Allow" when prompted.' ),
 
+			// NiceLabel & Barcode Hub
+			'barcode_hub_title'     => array( 'cat' => 'general', 'en' => 'NiceLabel Barcode & Label Print Hub' ),
+			'barcode_hub_btn'       => array( 'cat' => 'general', 'en' => '🏷️ Barcode Print Hub' ),
+			'barcode_hub_desc'      => array( 'cat' => 'general', 'en' => 'Select products, set label quantities, and print directly to NiceLabel thermal printers.' ),
+			'nicelabel_extension_title' => array( 'cat' => 'general', 'en' => 'NiceLabel & Barcode Thermal Bridge (Chrome Extension)' ),
+			'nicelabel_extension_desc'  => array( 'cat' => 'general', 'en' => 'Direct silent label printing to NiceLabel Automation & thermal barcode printers.' ),
+			'extension_setup_title' => array( 'cat' => 'general', 'en' => 'Omni NiceLabel Print Extension' ),
+			'extension_setup_subtitle' => array( 'cat' => 'general', 'en' => '1-Click Silent Thermal Printing & NiceLabel Bridge' ),
+			'extension_active'      => array( 'cat' => 'general', 'en' => 'Chrome Extension Active' ),
+			'extension_not_installed' => array( 'cat' => 'general', 'en' => 'Extension Not Detected' ),
+			'extension_ready_desc'  => array( 'cat' => 'general', 'en' => 'Ready for direct silent printing to NiceLabel & thermal printers.' ),
+			'extension_missing_desc'=> array( 'cat' => 'general', 'en' => 'Please install the extension on this browser to enable 1-click printing.' ),
+			'print_queue'           => array( 'cat' => 'general', 'en' => 'Print Queue' ),
+			'all_to_stock'          => array( 'cat' => 'general', 'en' => 'All to Stock' ),
+			'print_on_nicelabel'    => array( 'cat' => 'general', 'en' => 'Print on NiceLabel' ),
+			'install_extension_btn' => array( 'cat' => 'general', 'en' => 'Install Extension' ),
+			'reconnect_guide'       => array( 'cat' => 'general', 'en' => 'Reconnect / Guide' ),
+			'test_nicelabel_btn'    => array( 'cat' => 'general', 'en' => '🏷️ Test NiceLabel Print' ),
+			'recent_10_products'    => array( 'cat' => 'general', 'en' => 'Recent 10 Products' ),
+			'search_products_barcode' => array( 'cat' => 'general', 'en' => 'Search by title, barcode, or SKU...' ),
+
 			// ==========================================
 			// 8. Reports & Analytics
 			// ==========================================
@@ -1290,6 +1311,25 @@ class Omni_POS_I18n {
 			'cash_out' => 'თანხის გატანა (ხარჯი)',
 			'sales_reports' => 'გაყიდვების რეპორტები',
 			'data_migration' => 'მონაცემთა იმპორტი & მიგრაცია',
+			'barcode_hub_title' => 'NiceLabel ბარკოდების & ეტიკეტების ბეჭდვა',
+			'barcode_hub_btn' => '🏷️ ბარკოდების ბეჭდვა',
+			'barcode_hub_desc' => 'აირჩიეთ პროდუქცია, მიუთითეთ სტიკერების რაოდენობა და დაბეჭდეთ NiceLabel თერმო-პრინტერზე.',
+			'nicelabel_extension_title' => 'NiceLabel & ბარკოდების თერმული ხიდი (Chrome Extension)',
+			'nicelabel_extension_desc' => 'პირდაპირი ჩუმი ბეჭდვა NiceLabel Automation-სა და თერმო-პრინტერებზე.',
+			'extension_setup_title' => 'Omni NiceLabel ბეჭდვის გაფართოება',
+			'extension_setup_subtitle' => '1-კლიკით ჩუმი ბეჭდვა & NiceLabel ინტეგრაცია',
+			'extension_active' => 'Chrome Extension გააქტიურებულია',
+			'extension_not_installed' => 'Extension არ არის დაყენებული',
+			'extension_ready_desc' => 'მზად არის NiceLabel-სა და თერმო-პრინტერებზე პირდაპირი ბეჭდვისთვის.',
+			'extension_missing_desc' => 'გთხოვთ დააყენოთ გაფართოება ამ ბრაუზერში 1-კლიკით ბეჭდვისთვის.',
+			'print_queue' => 'დასაბეჭდი სია',
+			'all_to_stock' => 'მარაგის რაოდენობაზე',
+			'print_on_nicelabel' => 'ბეჭდვა NiceLabel-ზე',
+			'install_extension_btn' => 'Extension-ის დაყენება',
+			'reconnect_guide' => 'დაკავშირება / ინსტრუქცია',
+			'test_nicelabel_btn' => '🏷️ NiceLabel ბეჭდვის ტესტი',
+			'recent_10_products' => 'ბოლო 10 პროდუქტი',
+			'search_products_barcode' => 'ძებნა დასახელებით, შტრიხკოდით ან არტიკულით...',
 		);
 
 		foreach ( $harvested as $key => $item ) {

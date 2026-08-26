@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { qzClient, type QzStatus } from '../services/qzClient';
+import { niceLabelClient } from '../services/niceLabelClient';
 import { QzTraySetupModal } from './hardware/QzTraySetupModal';
+import { ExtensionSetupModal } from './hardware/ExtensionSetupModal';
 import { t } from '../utils/i18n';
 import { formatPrice } from '../utils/format';
 import { LanguageSelector } from './LanguageSelector';
@@ -26,6 +28,7 @@ import {
   Unlock,
   Coins,
   Printer,
+  Puzzle,
 } from 'lucide-react';
 
 export const ShiftMenu: React.FC = () => {
@@ -163,11 +166,19 @@ export const PosHeader: React.FC = () => {
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isQzModalOpen, setIsQzModalOpen] = useState(false);
   const [qzStatus, setQzStatus] = useState<QzStatus>(qzClient.getStatus());
+  const [isExtensionModalOpen, setIsExtensionModalOpen] = useState(false);
+  const [isExtensionInstalled, setIsExtensionInstalled] = useState(true);
+
+  const checkExtension = useCallback(async () => {
+    const installed = await niceLabelClient.isExtensionInstalled(600);
+    setIsExtensionInstalled(installed);
+  }, []);
 
   useEffect(() => {
     const unsub = qzClient.onStatusChange((s) => setQzStatus(s));
+    checkExtension();
     return () => unsub();
-  }, []);
+  }, [checkExtension]);
 
   const handleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -246,6 +257,19 @@ export const PosHeader: React.FC = () => {
             <Moon className="w-4 h-4 text-slate-600" />
           )}
         </button>
+
+        {/* NiceLabel Extension Setup Prompt (Shown ONLY to Admin if extension not detected on this browser) */}
+        {Boolean(initData?.cashier?.capabilities?.manage_pos || window.omniPosConfig?.isAdmin) && !isExtensionInstalled && (
+          <button
+            type="button"
+            onClick={() => setIsExtensionModalOpen(true)}
+            title="Omni NiceLabel Print Extension is not installed on this browser. Click to setup."
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition-all animate-pulse active:scale-95 cursor-pointer"
+          >
+            <Puzzle className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">{t('install_extension_btn', 'Install Extension')}</span>
+          </button>
+        )}
 
         {/* QZ Tray Hardware Bridge Status Button (Visible ONLY to Managers / Admins) */}
         {Boolean(initData?.cashier?.capabilities?.manage_pos || window.omniPosConfig?.isAdmin) && (
@@ -355,6 +379,15 @@ export const PosHeader: React.FC = () => {
       <QzTraySetupModal
         isOpen={isQzModalOpen}
         onClose={() => setIsQzModalOpen(false)}
+      />
+
+      {/* NiceLabel Chrome Extension Setup Modal */}
+      <ExtensionSetupModal
+        isOpen={isExtensionModalOpen}
+        onClose={() => {
+          setIsExtensionModalOpen(false);
+          checkExtension();
+        }}
       />
     </header>
   );

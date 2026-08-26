@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { usePosStore } from '../../store/usePosStore';
 import { ProductEditModal } from './ProductEditModal';
 import { BarcodePrintModal } from './BarcodePrintModal';
+import { AdminBarcodeHubModal } from './AdminBarcodeHubModal';
 import { t } from '../../utils/i18n';
 import type { Product } from '../../types';
 import {
@@ -22,6 +23,7 @@ import {
   Minus,
   Check,
   Info,
+  Tag,
 } from 'lucide-react';
 
 export const AdminProductsView: React.FC = () => {
@@ -43,6 +45,8 @@ export const AdminProductsView: React.FC = () => {
 
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [productToPrint, setProductToPrint] = useState<Product | null>(null);
+
+  const [isBarcodeHubOpen, setIsBarcodeHubOpen] = useState(false);
 
   // Quick stock adjustment state indicator
   const [adjustingStockId, setAdjustingStockId] = useState<number | null>(null);
@@ -174,6 +178,15 @@ export const AdminProductsView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsBarcodeHubOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+          >
+            <Tag className="w-4 h-4" />
+            <span>{t('barcode_hub_btn', '🏷️ Barcode Print Hub')}</span>
+          </button>
+
           <button
             onClick={() => fetchProducts()}
             disabled={isLoading}
@@ -558,6 +571,12 @@ export const AdminProductsView: React.FC = () => {
         product={productToPrint}
         currency={currency}
         storeName={initData?.store.name || 'Omni POS'}
+      />
+
+      {/* Batch Barcode & Label Print Hub (NiceLabel) */}
+      <AdminBarcodeHubModal
+        isOpen={isBarcodeHubOpen}
+        onClose={() => setIsBarcodeHubOpen(false)}
       />
     </div>
   );
