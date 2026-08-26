@@ -1,0 +1,13 @@
+[NiceWatch]
+Version=17.2
+[Server]
+Port=56424
+[Job1]
+Name=Omni_POS_Print
+Type=HTTP
+Port=56424
+Path=/print
+Action1=OpenLabel
+Label=product_label.nlbl
+Action2=PrintLabel
+Quantity=1
