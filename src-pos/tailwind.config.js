@@ -23,7 +23,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['"BPG DejaVu Sans"', '"DejaVu Sans"', 'system-ui', '-apple-system', 'sans-serif'],
       },
       screens: {
         'print': { 'raw': 'print' },

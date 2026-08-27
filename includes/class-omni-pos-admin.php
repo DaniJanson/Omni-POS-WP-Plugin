@@ -342,7 +342,13 @@ class Omni_POS_Admin {
 
 		$has_build = file_exists( $build_dir . 'index.html' ) || file_exists( $build_dir . 'assets' );
 
-		// Register Google Fonts
+		// Register BPG DejaVu Sans & Google Fonts
+		wp_enqueue_style(
+			'omni-pos-font-dejavu',
+			'https://cdn.web-fonts.ge/fonts/bpg-dejavu-sans/css/bpg-dejavu-sans.min.css',
+			array(),
+			OMNI_POS_VERSION
+		);
 		wp_enqueue_style(
 			'omni-pos-fonts',
 			'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap',
