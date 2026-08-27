@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { usePosStore } from '../../store/usePosStore';
 import { AdminDashboard } from './AdminDashboard';
 import { AdminOrdersView } from './AdminOrdersView';
@@ -32,6 +32,15 @@ import {
   Zap,
   Sparkles,
   Layers,
+  ShoppingBag,
+  Store,
+  ChevronDown,
+  User,
+  Shield,
+  LogOut,
+  Maximize2,
+  Minimize2,
+  ArrowRight,
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -67,11 +76,43 @@ export const AdminLayout: React.FC = () => {
     theme,
     toggleTheme,
     initData,
-    currentLanguage,
-    translations,
+    updateInfo,
   } = usePosStore();
 
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+        setIsFullscreen(false);
+      }
+    }
+  };
+
   const inventoryMode = adminSettings?.inventory_mode || window.omniPosConfig?.inventoryMode || 'woocommerce';
+  const cashierName = initData?.cashier?.name || 'Admin';
+  const cashierRole = initData?.cashier?.capabilities?.manage_pos || window.omniPosConfig?.isAdmin ? 'Administrator' : 'Cashier';
+  const cashierInitial = cashierName.charAt(0).toUpperCase();
+
+  const activeItem = SIDEBAR_ITEMS.find((i) => i.id === adminActiveTab);
+  const currentTitle = activeItem ? t(activeItem.labelKey, activeItem.defaultLabel) : adminActiveTab;
 
   const renderContent = () => {
     switch (adminActiveTab) {
@@ -104,25 +145,28 @@ export const AdminLayout: React.FC = () => {
     }
   };
 
-  const { updateInfo } = usePosStore();
-
   return (
     <div className="h-screen w-screen flex bg-slate-50 dark:bg-[#080d1a] text-slate-900 dark:text-slate-100 overflow-hidden font-sans select-none">
       {/* Left Sidebar */}
       <aside className="w-64 bg-white dark:bg-[#0f172a] border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0 shadow-sm z-30 transition-colors overflow-hidden">
         <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
           {/* Admin Hub Header */}
-          <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 shrink-0">
+          <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 shrink-0">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20 text-white">
-                <Zap className="w-5 h-5 fill-white/30" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center shadow-md shadow-blue-500/20 text-white shrink-0">
+                <Zap className="w-5 h-5 fill-white/20" />
               </div>
-              <div>
-                <h1 className="font-bold text-sm tracking-tight text-slate-900 dark:text-white leading-tight">
-                  Omni POS
-                </h1>
-                <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                  Admin Hub
+              <div className="flex flex-col">
+                <div className="flex items-center space-x-1.5">
+                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white leading-none">
+                    Omni POS
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                    PRO
+                  </span>
+                </div>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+                  {t('admin_hub_title', 'ადმინ პანელი')}
                 </span>
               </div>
             </div>
@@ -200,26 +244,15 @@ export const AdminLayout: React.FC = () => {
           </nav>
         </div>
 
-        {/* Sidebar Footer with Back to Register */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 space-y-2">
-          {/* Back to POS Register Button */}
-          <button
-            onClick={() => setActiveView('pos')}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-all"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>{t('back_to_pos', 'Back to Register (POS)')}</span>
-          </button>
-
-          {/* Cashier profile & store name */}
-          <div className="px-2 py-1.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="truncate max-w-[120px] font-medium">
-              {initData?.cashier.name || 'Admin'}
-            </span>
-            <span className="text-[10px] font-mono opacity-70">
-              v{window.omniPosConfig?.version || '1.0.0'}
-            </span>
+        {/* Sidebar Minimal Footer */}
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 shrink-0 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/30">
+          <div className="flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-medium text-slate-600 dark:text-slate-400">Omni Engine</span>
           </div>
+          <span className="font-mono text-[10px] bg-slate-200/60 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400 font-semibold">
+            v{window.omniPosConfig?.version || '1.2.1'}
+          </span>
         </div>
       </aside>
 
@@ -227,34 +260,126 @@ export const AdminLayout: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navbar */}
         <header className="h-16 bg-white dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800/80 px-6 flex items-center justify-between shrink-0 shadow-sm z-20 transition-colors">
+          {/* Left Title & Store Badge */}
           <div className="flex items-center space-x-3">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white capitalize">
-              {adminActiveTab.replace('_', ' ')}
+            <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+              {currentTitle}
             </h2>
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {initData?.store.name || 'Store Management'}
-            </span>
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/25 border border-blue-100 dark:border-blue-800/40 text-blue-700 dark:text-blue-300 text-xs font-semibold">
+              <Store className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>{initData?.store.name || 'Store'}</span>
+            </div>
           </div>
 
+          {/* Right Action Controls & Admin Profile */}
           <div className="flex items-center space-x-3">
             {/* Dark / Light Toggle */}
             <button
               onClick={toggleTheme}
               title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-500 dark:text-blue-300 active:scale-95 transition-all border border-slate-200 dark:border-slate-700/80 shadow-sm"
+              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-500 dark:text-blue-300 active:scale-95 transition-all border border-slate-200 dark:border-slate-700/80 shadow-sm cursor-pointer"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            {/* Quick Back to Register shortcut */}
+            {/* Prominent POS Register Button */}
             <button
               onClick={() => setActiveView('pos')}
-              className="hidden sm:flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 active:scale-95 transition-all"
+              className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Register</span>
+              <ShoppingBag className="w-4 h-4" />
+              <span>{t('open_pos_register_btn', 'სალაროზე გადასვლა')}</span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-80" />
             </button>
+
+            {/* Admin Profile Widget & Dropdown */}
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center space-x-2.5 p-1.5 pr-3 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700/80 transition-all active:scale-95 cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-sm">
+                  {cashierInitial}
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                    {cashierName}
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                    {cashierRole}
+                  </span>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Profile Dropdown Menu */}
+              {isProfileOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-2 text-xs divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in zoom-in-95 duration-100">
+                  {/* User Info Header */}
+                  <div className="p-3">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-indigo-500/20">
+                        {cashierInitial}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-white text-sm">
+                          {cashierName}
+                        </div>
+                        <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                          {cashierRole}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                      <span>{t('store', 'მაღაზია')}:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {initData?.store.name || 'Amore'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions List */}
+                  <div className="py-1.5 space-y-0.5">
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        setAdminActiveTab('settings');
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                    >
+                      <Settings className="w-4 h-4 text-slate-400" />
+                      <span>{t('settings', 'პარამეტრები')}</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        toggleFullscreen();
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                    >
+                      {isFullscreen ? <Minimize2 className="w-4 h-4 text-slate-400" /> : <Maximize2 className="w-4 h-4 text-slate-400" />}
+                      <span>{isFullscreen ? t('exit_fullscreen', 'სრული ეკრანიდან გამოსვლა') : t('fullscreen', 'სრული ეკრანი')}</span>
+                    </button>
+                  </div>
+
+                  {/* Back to POS / Logout */}
+                  <div className="pt-1.5">
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        setActiveView('pos');
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold transition-colors text-left"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      <span>{t('open_pos_register_btn', 'სალაროზე გადასვლა')}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
