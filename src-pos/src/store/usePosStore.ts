@@ -143,22 +143,34 @@ const getInitialUrlState = () => {
   }
 
   const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.replace('#', '').trim();
   const viewParam = params.get('view');
-  const tabParam = params.get('tab');
-  const isDirectControl = window.omniPosConfig?.inventoryMode === 'omni_pos';
-  const isAdmin = window.omniPosConfig?.isAdmin;
+  const tabParam = params.get('tab') || hash;
   const initialView = window.omniPosConfig?.initialView;
   const initialTab = window.omniPosConfig?.initialTab;
 
+  const validTabs: AdminTab[] = [
+    'dashboard',
+    'orders',
+    'suppliers',
+    'products',
+    'shifts',
+    'cashiers',
+    'reports',
+    'customers',
+    'translations',
+    'migration',
+    'updates',
+    'settings',
+  ];
+
+  const targetTabCandidate = (tabParam || initialTab || '') as AdminTab;
+  const tab: AdminTab = validTabs.includes(targetTabCandidate) ? targetTabCandidate : 'dashboard';
+
   let view: AppView = 'pos';
-  if ((viewParam === 'admin' || initialView === 'admin') && isDirectControl && isAdmin) {
+  if (viewParam === 'admin' || initialView === 'admin' || (tabParam && validTabs.includes(tabParam as AdminTab))) {
     view = 'admin';
   }
-
-  const validTabs: AdminTab[] = ['dashboard', 'orders', 'suppliers', 'products', 'shifts', 'cashiers', 'reports', 'customers', 'translations', 'migration', 'settings'];
-  const tab: AdminTab = validTabs.includes((tabParam || initialTab) as AdminTab)
-    ? ((tabParam || initialTab) as AdminTab)
-    : 'dashboard';
 
   return { view, tab };
 };
@@ -213,17 +225,17 @@ export const usePosStore = create<PosState>((set, get) => ({
         url.searchParams.delete('view');
         url.searchParams.delete('tab');
       }
-      window.history.pushState({}, '', url.pathname + url.search);
+      window.history.replaceState({}, '', url.pathname + url.search);
     }
   },
 
   setAdminActiveTab: (tab: AdminTab) => {
     set({ adminActiveTab: tab });
-    if (typeof window !== 'undefined' && get().activeView === 'admin') {
+    if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('view', 'admin');
       url.searchParams.set('tab', tab);
-      window.history.pushState({}, '', url.pathname + url.search);
+      window.history.replaceState({}, '', url.pathname + url.search);
     }
   },
 

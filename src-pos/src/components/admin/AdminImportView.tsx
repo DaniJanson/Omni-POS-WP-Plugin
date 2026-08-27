@@ -136,21 +136,6 @@ export const AdminImportView: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-[#080d1a] text-slate-900 dark:text-slate-100">
-      {/* Header */}
-      <div className="h-16 px-6 bg-white dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20">
-            <UploadCloud className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold tracking-tight">{t('import_hub', 'Data Import & Migration Hub')}</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {t('import_hub_desc', 'Import products, stock, barcodes, categories, suppliers and invoices from VitePOS or JSON backups')}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content Area */}
       <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-6 max-w-4xl mx-auto w-full">
         {/* Upload Dropzone */}

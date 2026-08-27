@@ -43,17 +43,6 @@ export const App: React.FC = () => {
   const [isResumeShiftModalOpen, setIsResumeShiftModalOpen] = useState(false);
   const [hasCheckedShiftSession, setHasCheckedShiftSession] = useState(false);
 
-  // Enforce redirection to POS register if in WooCommerce Standard mode
-  useEffect(() => {
-    if (activeView === 'admin' && !isDirectControl) {
-      setActiveView('pos');
-      if (window.location.search.includes('view=admin')) {
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, '', cleanUrl);
-      }
-    }
-  }, [activeView, isDirectControl, setActiveView]);
-
   // Check shift status when entering POS Terminal (only in Direct Control mode)
   useEffect(() => {
     if (activeView === 'pos' && isDirectControl && !hasCheckedShiftSession && !isLoadingInit && initData) {

@@ -313,22 +313,9 @@ export const AdminTranslationsView: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-[#080d1a] text-slate-900 dark:text-slate-100">
-      {/* Header */}
-      <div className="h-16 px-6 bg-white dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-500/20">
-            <Languages className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold tracking-tight">{t('languages_translations', 'Language & In-App Translations')}</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {t('languages_desc', 'Scan system strings, add custom phrases, edit translations, or translate with Loco Translate')}
-            </p>
-          </div>
-        </div>
-
-        {/* Top Actions */}
-        <div className="flex items-center space-x-2.5">
+      {/* Top Actions Toolbar */}
+      <div className="px-6 py-3.5 bg-white dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Add Custom String Button */}
           <button
             type="button"
@@ -363,9 +350,9 @@ export const AdminTranslationsView: React.FC = () => {
             <Bot className={`w-4 h-4 ${isAutoTranslating ? 'animate-bounce' : ''}`} />
             <span>{isAutoTranslating ? t('saving', 'Translating...') : t('auto_translate_all', 'Auto-Translate All')}</span>
           </button>
+        </div>
 
-          <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
-
+        <div className="flex items-center space-x-2.5">
           <LanguageSelector />
 
           <button
