@@ -374,64 +374,69 @@ export const AdminOrdersView: React.FC = () => {
       </div>
 
       {/* Filter and Search Toolbar */}
-      <div className="p-6 pb-4">
-        <form onSubmit={handleSearchSubmit} className="flex flex-wrap items-center gap-3 bg-white dark:bg-[#0f172a] p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="p-6 pb-4 shrink-0">
+        <form onSubmit={handleSearchSubmit} className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 bg-white dark:bg-[#0f172a] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px]">
+          <div className="relative flex-1 min-w-[260px]">
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={t('search_placeholder', 'Search by Order #, Customer name, email or phone...')}
-              className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-inner transition-all"
             />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
           </div>
 
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">{t('all', 'All Statuses')}</option>
-            <option value="completed">{t('completed_sales', 'Completed')}</option>
-            <option value="processing">{t('in_progress', 'Processing')}</option>
-            <option value="on-hold">{t('on_hold', 'On Hold')}</option>
-            <option value="cancelled">{t('cancel', 'Cancelled')}</option>
-            <option value="refunded">{t('refund', 'Refunded')}</option>
-          </select>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {/* Status Filter */}
+            <div className="min-w-[140px]">
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-inner transition-all cursor-pointer"
+              >
+                <option value="all">{t('all', 'All Statuses')}</option>
+                <option value="completed">{t('completed_sales', 'Completed')}</option>
+                <option value="processing">{t('in_progress', 'Processing')}</option>
+                <option value="on-hold">{t('on_hold', 'On Hold')}</option>
+                <option value="cancelled">{t('cancel', 'Cancelled')}</option>
+                <option value="refunded">{t('refund', 'Refunded')}</option>
+              </select>
+            </div>
 
-          {/* Date Range */}
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none"
-            />
-            <span className="text-xs text-slate-400">-</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none"
-            />
+            {/* Date Range */}
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-inner">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                className="bg-transparent border-0 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              />
+              <span className="text-xs text-slate-400">-</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                className="bg-transparent border-0 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              />
+            </div>
+
+            {/* Filter Submit */}
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer"
+            >
+              {t('filter', 'Filter')}
+            </button>
           </div>
-
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
-          >
-            {t('filter', 'Filter')}
-          </button>
         </form>
       </div>
 
       {/* Orders Table */}
       <div className="flex-1 px-6 pb-6 overflow-hidden flex flex-col">
-        <div className="flex-1 bg-white dark:bg-[#0f172a] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-auto custom-scrollbar">
             {isLoading ? (
               <div className="h-64 flex items-center justify-center text-slate-400">
                 <RefreshCw className="w-5 h-5 animate-spin mr-2 text-blue-500" />
@@ -444,9 +449,9 @@ export const AdminOrdersView: React.FC = () => {
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider sticky top-0 z-10">
-                    <th className="py-3 px-3 w-10 text-center">
+                <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/90 backdrop-blur-xs border-b border-slate-200 dark:border-slate-800">
+                  <tr className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                    <th className="py-3.5 px-3 w-10 text-center">
                       <input
                         type="checkbox"
                         checked={orders.length > 0 && selectedOrderIds.length === orders.length}
@@ -454,15 +459,15 @@ export const AdminOrdersView: React.FC = () => {
                         className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 cursor-pointer"
                       />
                     </th>
-                    <th className="py-3 px-4">{t('receipt_number', 'Receipt #')}</th>
-                    <th className="py-3 px-3">{t('date', 'Date & Time')}</th>
-                    <th className="py-3 px-3">{t('customer', 'Customer')}</th>
-                    <th className="py-3 px-3">{t('cashier', 'Cashier')}</th>
-                    <th className="py-3 px-3">{t('payment_method', 'Payment')}</th>
-                    <th className="py-3 px-3 text-center">{t('qty', 'Items')}</th>
-                    <th className="py-3 px-3 text-right">{t('amount', 'Total')}</th>
-                    <th className="py-3 px-3 text-center">{t('status', 'Status')}</th>
-                    <th className="py-3 px-4 text-right">{t('actions', 'Actions')}</th>
+                    <th className="py-3.5 px-3 w-28">{t('receipt_number', 'Receipt #')}</th>
+                    <th className="py-3.5 px-3 w-36">{t('date', 'Date & Time')}</th>
+                    <th className="py-3.5 px-3 min-w-[140px]">{t('customer', 'Customer')}</th>
+                    <th className="py-3.5 px-3 w-28">{t('cashier', 'Cashier')}</th>
+                    <th className="py-3.5 px-3 w-28">{t('payment_method', 'Payment')}</th>
+                    <th className="py-3.5 px-3 w-16 text-center">{t('qty', 'Items')}</th>
+                    <th className="py-3.5 px-3 w-28 text-right">{t('amount', 'Total')}</th>
+                    <th className="py-3.5 px-3 w-28 text-center">{t('status', 'Status')}</th>
+                    <th className="py-3.5 px-4 w-32 text-right">{t('actions', 'Actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -480,7 +485,7 @@ export const AdminOrdersView: React.FC = () => {
                         />
                       </td>
 
-                      <td className="py-3 px-4 font-bold font-mono text-blue-600 dark:text-blue-400">
+                      <td className="py-3 px-3 font-bold font-mono text-blue-600 dark:text-blue-400">
                         <div className="flex items-center gap-1.5">
                           <span>#{order.order_number}</span>
                           {order.is_pos && (

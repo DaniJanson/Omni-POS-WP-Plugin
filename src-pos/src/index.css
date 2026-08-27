@@ -32,7 +32,7 @@
     font-family: 'BPG DejaVu Sans', 'DejaVu Sans', system-ui, -apple-system, sans-serif !important;
   }
 
-  /* Reset WordPress admin styles from bleeding into Omni POS inputs and buttons */
+  /* Reset WordPress admin styles from bleeding into Omni POS inputs, selects and tables */
   #root button,
   #root input,
   #root select,
@@ -41,6 +41,41 @@
     box-sizing: border-box;
     margin: 0;
     line-height: normal;
+  }
+
+  #root select {
+    width: auto !important;
+    max-width: 100%;
+    display: inline-block;
+  }
+
+  #root table {
+    display: table !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+  }
+
+  #root thead {
+    display: table-header-group !important;
+    width: 100% !important;
+  }
+
+  #root tbody {
+    display: table-row-group !important;
+    width: 100% !important;
+  }
+
+  #root tr {
+    display: table-row !important;
+    width: 100% !important;
+  }
+
+  #root th,
+  #root td {
+    display: table-cell !important;
+    vertical-align: middle !important;
   }
 
   #root button {

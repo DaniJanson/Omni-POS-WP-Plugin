@@ -3,7 +3,7 @@
  * Plugin Name: Omni POS - Ultra Fast Point of Sale
  * Plugin URI: https://omni.ge
  * Description: Lightweight, ultra-fast React + IndexedDB Point of Sale (POS) system for WooCommerce.
- * Version: 1.2.5
+ * Version: 1.2.6
  * Author: Omni Dev Team
  * Author URI: https://omni.ge
  * Text Domain: omni-pos
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-define( 'OMNI_POS_VERSION', '1.2.5' );
+define( 'OMNI_POS_VERSION', '1.2.6' );
 define( 'OMNI_POS_FILE', __FILE__ );
 define( 'OMNI_POS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'OMNI_POS_URL', plugin_dir_url( __FILE__ ) );
