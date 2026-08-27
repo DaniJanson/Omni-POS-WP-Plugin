@@ -36,12 +36,12 @@ export const ProductGrid: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-100 dark:bg-[#0b0f19] overflow-hidden transition-colors relative">
       {/* Top Search & Filter Bar */}
-      <div className={`p-3.5 border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0f172a]/70 backdrop-blur-md flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between transition-all ${
+      <div className={`p-3 border-b border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-[#0f172a]/90 backdrop-blur-md flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between transition-all ${
         isShiftLocked ? 'opacity-40 pointer-events-none' : ''
       }`}>
-        {/* Search & Barcode Input */}
-        <div className="relative flex-1 max-w-lg">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+        {/* Search & Barcode Input - Expanded width */}
+        <div className="relative w-full md:w-[460px] lg:w-[520px] shrink-0">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <Search className="w-4 h-4" />
           </div>
           <input
@@ -52,26 +52,26 @@ export const ProductGrid: React.FC = () => {
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('search_placeholder', 'Search products or scan barcode...')}
-            className="w-full pl-9 pr-24 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-inner transition-colors disabled:cursor-not-allowed"
+            className="w-full pl-10 pr-24 py-2.5 bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-inner transition-all disabled:cursor-not-allowed"
           />
-          <div className="absolute inset-y-0 right-0 pr-2 flex items-center space-x-1.5">
+          <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center space-x-1.5">
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800"
+                className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
-            <div className="hidden sm:flex items-center space-x-1 px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-mono text-slate-600 dark:text-slate-400">
-              <Barcode className="w-3 h-3 text-blue-500 dark:text-blue-400" />
+            <div className="flex items-center space-x-1 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 text-[10px] font-mono font-semibold text-blue-700 dark:text-blue-300">
+              <Barcode className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>{t('auto', 'Auto')}</span>
             </div>
           </div>
         </div>
 
         {/* Categories Bar */}
-        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+        <div className="flex-1 flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-thin min-w-0">
           <button
             onClick={() => setSelectedCategoryId(0)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
