@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { usePosStore } from '../../store/usePosStore';
 import { AdminSettingsHardware } from './AdminSettingsHardware';
+import { AdminImportView } from './AdminImportView';
+import { AdminUpdatesView } from './AdminUpdatesView';
 import { t } from '../../utils/i18n';
 import type { AdminSettings } from '../../types';
 import {
@@ -12,10 +14,32 @@ import {
   Package,
   CheckCircle2,
   FileText,
+  UploadCloud,
+  Sparkles,
 } from 'lucide-react';
 
 export const AdminSettingsView: React.FC = () => {
-  const { adminSettings, fetchAdminSettings, saveAdminSettings, initData } = usePosStore();
+  const {
+    adminSettings,
+    fetchAdminSettings,
+    saveAdminSettings,
+    initData,
+    updateInfo,
+    adminActiveTab,
+    setAdminActiveTab,
+  } = usePosStore();
+
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'migration' | 'updates'>(() => {
+    if (adminActiveTab === 'migration') return 'migration';
+    if (adminActiveTab === 'updates') return 'updates';
+    return 'general';
+  });
+
+  useEffect(() => {
+    if (adminActiveTab === 'migration') setActiveSettingsTab('migration');
+    else if (adminActiveTab === 'updates') setActiveSettingsTab('updates');
+    else if (adminActiveTab === 'settings') setActiveSettingsTab('general');
+  }, [adminActiveTab]);
 
   const [formData, setFormData] = useState<AdminSettings>({
     inventory_mode: 'woocommerce',
@@ -103,40 +127,98 @@ export const AdminSettingsView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-            {t('settings_title', 'System & POS Settings')}
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {t('settings_desc', 'Configure management modes, stock alerts, receipt templates and cashier parameters.')}
-          </p>
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-[#080d1a] text-slate-900 dark:text-slate-100">
+      {/* Top Settings Navigation Tabs */}
+      <div className="px-6 pt-5 pb-2 flex items-center justify-between shrink-0">
+        <div className="flex items-center space-x-2 bg-slate-200/70 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-300/60 dark:border-slate-700">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSettingsTab('general');
+              setAdminActiveTab('settings');
+            }}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeSettingsTab === 'general'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-md shadow-black/5'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Sliders className="w-4 h-4" />
+            <span>{t('settings_general', 'პარამეტრები & აპარატურა')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSettingsTab('migration');
+              setAdminActiveTab('migration');
+            }}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeSettingsTab === 'migration'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-md shadow-black/5'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <UploadCloud className="w-4 h-4" />
+            <span>{t('tab_migration', 'მიგრაცია & იმპორტი')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSettingsTab('updates');
+              setAdminActiveTab('updates');
+            }}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+              activeSettingsTab === 'updates'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-md shadow-black/5'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>{t('tab_updates', 'განახლებები')}</span>
+            {updateInfo?.has_update && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping ml-1" />
+            )}
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSaving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all disabled:opacity-50 cursor-pointer"
-        >
-          {isSaving ? (
-            <RotateCw className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          <span>{isSaving ? t('saving', 'Saving...') : t('save_settings', 'Save Settings')}</span>
-        </button>
+        {activeSettingsTab === 'general' && (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all disabled:opacity-50 cursor-pointer"
+          >
+            {isSaving ? (
+              <RotateCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span>{isSaving ? t('saving', 'Saving...') : t('save_settings', 'Save Settings')}</span>
+          </button>
+        )}
       </div>
 
-      {saveSuccess && (
-        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium flex items-center gap-2 animate-fadeIn">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>{t('settings_saved_success', 'All settings updated and synchronized across terminals!')}</span>
+      {/* Tab Content Router */}
+      {activeSettingsTab === 'migration' ? (
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <AdminImportView />
         </div>
-      )}
+      ) : activeSettingsTab === 'updates' ? (
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <AdminUpdatesView />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 max-w-5xl mx-auto space-y-6 w-full">
+          {saveSuccess && (
+            <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium flex items-center gap-2 animate-fadeIn">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{t('settings_saved_success', 'All settings updated and synchronized across terminals!')}</span>
+            </div>
+          )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
         {/* 1. Currency & Price Formatting (WooCommerce Synchronized) */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -503,5 +585,7 @@ export const AdminSettingsView: React.FC = () => {
         </div>
       </form>
     </div>
-  );
+  )}
+</div>
+);
 };

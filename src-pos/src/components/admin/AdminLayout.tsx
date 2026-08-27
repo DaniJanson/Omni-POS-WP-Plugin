@@ -62,9 +62,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { id: 'reports', labelKey: 'tab_reports', defaultLabel: 'Reports', subKey: 'tab_reports_sub', defaultSub: 'Analytics & Charts', icon: BarChart3 },
   { id: 'customers', labelKey: 'tab_customers', defaultLabel: 'Customers', subKey: 'tab_customers_sub', defaultSub: 'Directory & History', icon: Users },
   { id: 'translations', labelKey: 'tab_translations', defaultLabel: 'Languages', subKey: 'tab_translations_sub', defaultSub: 'Translations & i18n', icon: Languages },
-  { id: 'migration', labelKey: 'tab_migration', defaultLabel: 'Migration', subKey: 'tab_migration_sub', defaultSub: 'Import & Export', icon: UploadCloud },
-  { id: 'updates', labelKey: 'tab_updates', defaultLabel: 'Updates', subKey: 'tab_updates_sub', defaultSub: 'Versions & System', icon: Sparkles },
-  { id: 'settings', labelKey: 'tab_settings', defaultLabel: 'Settings', subKey: 'tab_settings_sub', defaultSub: 'Hardware & Setup', icon: Settings },
+  { id: 'settings', labelKey: 'tab_settings', defaultLabel: 'Settings', subKey: 'tab_settings_sub', defaultSub: 'Hardware, Import & Updates', icon: Settings },
 ];
 
 export const AdminLayout: React.FC = () => {
@@ -125,9 +123,7 @@ export const AdminLayout: React.FC = () => {
       case 'translations':
         return <AdminTranslationsView />;
       case 'migration':
-        return <AdminImportView />;
       case 'updates':
-        return <AdminUpdatesView />;
       case 'settings':
         return <AdminSettingsView />;
       case 'products':
@@ -189,11 +185,11 @@ export const AdminLayout: React.FC = () => {
           <nav className="px-3 pb-3 space-y-1 mt-0.5">
             {SIDEBAR_ITEMS.map((item) => {
               const Icon = item.icon;
-              const isActive = adminActiveTab === item.id;
+              const isActive = adminActiveTab === item.id || ((item.id === 'settings') && (adminActiveTab === 'migration' || adminActiveTab === 'updates'));
               const label = t(item.labelKey, item.defaultLabel);
               const subLabel = t(item.subKey, item.defaultSub);
-              const isUpdateTab = item.id === 'updates';
-              const hasUpdateNotification = isUpdateTab && updateInfo?.has_update;
+              const isSettingsTab = item.id === 'settings';
+              const hasUpdateNotification = isSettingsTab && updateInfo?.has_update;
 
               return (
                 <button
