@@ -1,11 +1,33 @@
 {
   "index.html": {
-    "file": "assets/index-BxGIZbn0.js",
+    "file": "assets/index-ROw278Lc.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
     "css": [
-      "assets/index-CttGwRQ7.css"
+      "assets/index-Cv2KbNG_.css"
+    ],
+    "assets": [
+      "assets/dejavu-sans-latin-400-normal-CD-C4kiC.woff2",
+      "assets/dejavu-sans-latin-400-normal-D-xUQj0R.woff",
+      "assets/dejavu-sans-latin-700-normal-D5qn-Fn5.woff2",
+      "assets/dejavu-sans-latin-700-normal-Cr49lFNP.woff"
     ]
+  },
+  "node_modules/@fontsource/dejavu-sans/files/dejavu-sans-latin-400-normal.woff": {
+    "file": "assets/dejavu-sans-latin-400-normal-D-xUQj0R.woff",
+    "src": "node_modules/@fontsource/dejavu-sans/files/dejavu-sans-latin-400-normal.woff"
+  },
+  "node_modules/@fontsource/dejavu-sans/files/dejavu-sans-latin-400-normal.woff2": {
+    "file": "assets/dejavu-sans-latin-400-normal-CD-C4kiC.woff2",
+    "src": "node_modules/@fontsource/dejavu-sans/files/dejavu-sans-latin-400-normal.woff2"
+  },
+  "node_modules/@fontsource/dejavu-sans/files/dejavu-sans-latin-700-normal.woff": {
+    "file": "assets/dejavu-sans-latin-700-normal-Cr49lFNP.woff",
+    "src": "node_modules/@fontsource/dejavu-sans/files/dejavu-sans-latin-700-normal.woff"
+  },
+  "node_modules/@fontsource/dejavu-sans/files/dejavu-sans-latin-700-normal.woff2": {
+    "file": "assets/dejavu-sans-latin-700-normal-D5qn-Fn5.woff2",
+    "src": "node_modules/@fontsource/dejavu-sans/files/dejavu-sans-latin-700-normal.woff2"
   }
 }

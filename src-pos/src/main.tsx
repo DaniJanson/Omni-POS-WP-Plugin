@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import '@fontsource/dejavu-sans/400.css';
+import '@fontsource/dejavu-sans/700.css';
 import App from './App';
 import './index.css';
 
