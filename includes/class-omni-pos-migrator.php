@@ -38,17 +38,27 @@ class Omni_POS_Migrator {
 
 		// 1. Check VitePOS Barcodes and Cost Prices in Product Meta
 		$products_with_vtp_barcode = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key = '_vtp_barcode' AND meta_value != ''"
+			"SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key IN ('_vtp_barcode', '_vt_barcode') AND meta_value != ''"
 		);
 
 		$products_with_vtp_cost = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key = '_vtp_cost_price' AND meta_value != ''"
+			"SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key IN ('_vtp_cost_price', '_vt_cost_price') AND meta_value != ''"
 		);
+
+		// 2. Check VitePOS Multi-Outlet Stock Records
+		$vtp_stock_log_table = $wpdb->prefix . 'apbd_pos_stock_log';
+		$stock_log_exists = ( $wpdb->get_var( "SHOW TABLES LIKE '$vtp_stock_log_table'" ) === $vtp_stock_log_table );
+		$stock_log_products = $stock_log_exists ? (int) $wpdb->get_var( "SELECT COUNT(DISTINCT product_id) FROM $vtp_stock_log_table" ) : 0;
+
+		$products_with_vtp_stocks = (int) $wpdb->get_var(
+			"SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key = '_vt_stocks' AND meta_value != ''"
+		);
+		$total_stock_records = max( $products_with_vtp_stocks, $stock_log_products );
 
 		$total_products = (int) wp_count_posts( 'product' )->publish;
 		$total_variations = (int) wp_count_posts( 'product_variation' )->publish;
 
-		// 2. Check VitePOS Cash Drawer / Shifts Tables
+		// 3. Check VitePOS Cash Drawer / Shifts Tables
 		$vtp_drawer_table_v1 = $wpdb->prefix . 'apbd_pos_cash_drawer';
 		$vtp_drawer_table_v2 = $wpdb->prefix . 'vtp_cash_drawer';
 		$drawer_table = '';
@@ -62,7 +72,7 @@ class Omni_POS_Migrator {
 			$drawer_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $vtp_drawer_table_v2" );
 		}
 
-		// 3. Check VitePOS Cash Drawer Logs / Movements Table
+		// 4. Check VitePOS Cash Drawer Logs / Movements Table
 		$vtp_log_table_v1 = $wpdb->prefix . 'apbd_pos_cash_drawer_log';
 		$vtp_log_table_v2 = $wpdb->prefix . 'vtp_cash_drawer_log';
 		$log_table = '';
@@ -76,12 +86,12 @@ class Omni_POS_Migrator {
 			$log_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $vtp_log_table_v2" );
 		}
 
-		// 4. Check VitePOS Orders
+		// 5. Check VitePOS Orders
 		$vtp_orders_count = (int) $wpdb->get_var(
 			"SELECT COUNT(DISTINCT post_id) FROM {$wpdb->postmeta} WHERE meta_key = '_vtp_processed_by' OR meta_key = '_vtp_payment_list'"
 		);
 
-		// 5. Check VitePOS Vendors / Suppliers
+		// 6. Check VitePOS Vendors / Suppliers
 		$vtp_vendor_table_v1 = $wpdb->prefix . 'apbd_pos_vendor';
 		$vtp_vendor_table_v2 = $wpdb->prefix . 'vtp_vendor';
 		$vendor_table = '';
@@ -107,13 +117,14 @@ class Omni_POS_Migrator {
 			'is_vitepos_installed'       => $is_vitepos_installed,
 			'products_with_vtp_barcode'  => $products_with_vtp_barcode,
 			'products_with_vtp_cost'     => $products_with_vtp_cost,
+			'products_with_vtp_stocks'   => $total_stock_records,
 			'total_products'             => $total_products,
 			'total_variations'           => $total_variations,
 			'cash_drawer_sessions'       => $drawer_count,
 			'cash_movements_count'       => $log_count,
 			'vtp_orders_count'           => $vtp_orders_count,
 			'vendors_count'              => $vendor_count,
-			'has_migratable_data'        => ( $products_with_vtp_barcode > 0 || $drawer_count > 0 || $log_count > 0 || $vtp_orders_count > 0 || $vendor_count > 0 ),
+			'has_migratable_data'        => ( $products_with_vtp_barcode > 0 || $total_stock_records > 0 || $products_with_vtp_cost > 0 || $drawer_count > 0 || $log_count > 0 || $vtp_orders_count > 0 || $vendor_count > 0 ),
 			'available_snapshots'        => $snapshots,
 		);
 	}
@@ -145,10 +156,10 @@ class Omni_POS_Migrator {
 			$movements_data = $wpdb->get_results( "SELECT * FROM $movements_table", ARRAY_A );
 		}
 
-		// 4. Backup Existing Product Barcodes and Cost Prices
+		// 4. Backup Existing Product Barcodes, Cost Prices, and Stock Metas
 		$product_metas = $wpdb->get_results(
 			"SELECT post_id, meta_key, meta_value FROM {$wpdb->postmeta} 
-			 WHERE meta_key IN ('_barcode', '_omni_barcode', '_cost_price', '_purchase_price')",
+			 WHERE meta_key IN ('_barcode', '_omni_barcode', '_cost_price', '_omni_pos_cost_price', '_purchase_price', '_stock', '_manage_stock', '_stock_status')",
 			ARRAY_A
 		);
 
@@ -180,6 +191,7 @@ class Omni_POS_Migrator {
 
 		// Default options
 		$opt = wp_parse_args( $options, array(
+			'migrate_stocks'       => true,
 			'migrate_barcodes'     => true,
 			'migrate_cost_prices'  => true,
 			'migrate_shifts'       => true,
@@ -194,6 +206,7 @@ class Omni_POS_Migrator {
 		$results = array(
 			'success'             => true,
 			'snapshot_id'         => $snapshot_info['snapshot_id'],
+			'stocks_migrated'     => 0,
 			'barcodes_migrated'   => 0,
 			'costs_migrated'      => 0,
 			'shifts_migrated'     => 0,
@@ -205,10 +218,93 @@ class Omni_POS_Migrator {
 
 		$results['logs'][] = 'Safety snapshot created: ' . $snapshot_info['snapshot_id'];
 
-		// Step 2: Migrate Barcodes
+		// Step 2: Migrate Stock Quantities from VitePOS to WooCommerce & Omni POS
+		if ( ! empty( $opt['migrate_stocks'] ) ) {
+			// Find all products with _vt_stocks meta
+			$vt_stock_rows = $wpdb->get_results(
+				"SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_vt_stocks' AND meta_value != ''",
+				ARRAY_A
+			);
+
+			$processed_pids = array();
+
+			foreach ( $vt_stock_rows as $row ) {
+				$pid = (int) $row['post_id'];
+				$processed_pids[ $pid ] = true;
+
+				$stocks_data = maybe_unserialize( $row['meta_value'] );
+				$total_qty = 0;
+
+				if ( is_array( $stocks_data ) ) {
+					foreach ( $stocks_data as $outlet_id => $qty ) {
+						$total_qty += intval( $qty );
+					}
+				} elseif ( is_numeric( $stocks_data ) ) {
+					$total_qty = intval( $stocks_data );
+				}
+
+				// Update WooCommerce core stock fields
+				update_post_meta( $pid, '_stock', $total_qty );
+				update_post_meta( $pid, '_manage_stock', 'yes' );
+				$stock_status = ( $total_qty > 0 ) ? 'instock' : 'outofstock';
+				update_post_meta( $pid, '_stock_status', $stock_status );
+
+				// Update WooCommerce product meta lookup table if it exists
+				$lookup_table = $wpdb->prefix . 'wc_product_meta_lookup';
+				if ( $wpdb->get_var( "SHOW TABLES LIKE '$lookup_table'" ) === $lookup_table ) {
+					$wpdb->update(
+						$lookup_table,
+						array(
+							'stock_quantity' => $total_qty,
+							'stock_status'   => $stock_status,
+						),
+						array( 'product_id' => $pid )
+					);
+				}
+
+				if ( function_exists( 'wc_delete_product_transients' ) ) {
+					wc_delete_product_transients( $pid );
+				}
+
+				$results['stocks_migrated']++;
+			}
+
+			// Also check VitePOS stock log table for any products not in _vt_stocks
+			$vtp_stock_log_table = $wpdb->prefix . 'apbd_pos_stock_log';
+			if ( $wpdb->get_var( "SHOW TABLES LIKE '$vtp_stock_log_table'" ) === $vtp_stock_log_table ) {
+				$log_products = $wpdb->get_results(
+					"SELECT product_id, stock_val FROM $vtp_stock_log_table WHERE id IN (
+						SELECT MAX(id) FROM $vtp_stock_log_table GROUP BY product_id
+					)",
+					ARRAY_A
+				);
+
+				foreach ( $log_products as $lp ) {
+					$pid = (int) $lp['product_id'];
+					if ( ! empty( $processed_pids[ $pid ] ) ) {
+						continue; // Already processed from _vt_stocks
+					}
+
+					$qty = intval( $lp['stock_val'] );
+					update_post_meta( $pid, '_stock', $qty );
+					update_post_meta( $pid, '_manage_stock', 'yes' );
+					$stock_status = ( $qty > 0 ) ? 'instock' : 'outofstock';
+					update_post_meta( $pid, '_stock_status', $stock_status );
+
+					if ( function_exists( 'wc_delete_product_transients' ) ) {
+						wc_delete_product_transients( $pid );
+					}
+					$results['stocks_migrated']++;
+				}
+			}
+
+			$results['logs'][] = sprintf( 'Migrated %d product live stock quantities into WooCommerce.', $results['stocks_migrated'] );
+		}
+
+		// Step 3: Migrate Barcodes
 		if ( ! empty( $opt['migrate_barcodes'] ) ) {
 			$vtp_barcodes = $wpdb->get_results(
-				"SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_vtp_barcode' AND meta_value != ''",
+				"SELECT post_id, meta_key, meta_value FROM {$wpdb->postmeta} WHERE meta_key IN ('_vtp_barcode', '_vt_barcode') AND meta_value != ''",
 				ARRAY_A
 			);
 
@@ -220,16 +316,24 @@ class Omni_POS_Migrator {
 					// Save to standard _barcode and _omni_barcode
 					update_post_meta( $pid, '_barcode', $barcode );
 					update_post_meta( $pid, '_omni_barcode', $barcode );
+					update_post_meta( $pid, '_omni_pos_barcode', $barcode );
+
+					// If SKU is empty, populate SKU with barcode
+					$current_sku = get_post_meta( $pid, '_sku', true );
+					if ( empty( $current_sku ) ) {
+						update_post_meta( $pid, '_sku', $barcode );
+					}
+
 					$results['barcodes_migrated']++;
 				}
 			}
 			$results['logs'][] = sprintf( 'Migrated %d product barcodes.', $results['barcodes_migrated'] );
 		}
 
-		// Step 3: Migrate Cost Prices
+		// Step 4: Migrate Cost Prices / თვითღირებულება
 		if ( ! empty( $opt['migrate_cost_prices'] ) ) {
 			$vtp_costs = $wpdb->get_results(
-				"SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_vtp_cost_price' AND meta_value != ''",
+				"SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key IN ('_vtp_cost_price', '_vt_cost_price') AND meta_value != ''",
 				ARRAY_A
 			);
 
@@ -239,6 +343,7 @@ class Omni_POS_Migrator {
 
 				if ( $cost > 0 ) {
 					update_post_meta( $pid, '_cost_price', $cost );
+					update_post_meta( $pid, '_omni_pos_cost_price', $cost );
 					update_post_meta( $pid, '_purchase_price', $cost );
 					$results['costs_migrated']++;
 				}
@@ -282,23 +387,24 @@ class Omni_POS_Migrator {
 						$wpdb->insert(
 							$omni_shifts_table,
 							array(
-								'user_id'         => $user_id,
-								'user_name'       => $user_name,
-								'opened_at'       => $opened_at,
-								'closed_at'       => $closed_at,
-								'opening_float'   => $opening_float,
-								'closing_balance' => $closing_balance,
-								'cash_sales'      => 0.00,
-								'card_sales'      => 0.00,
-								'other_sales'     => 0.00,
-								'cash_in'         => 0.00,
-								'cash_out'        => 0.00,
-								'expected_cash'   => $closing_balance,
-								'discrepancy'     => 0.00,
-								'status'          => $status,
-								'notes'           => '[VitePOS_Drawer_#' . $vtp_id . '] Migrated from VitePOS Cash Drawer session.',
+								'cashier_id'    => $user_id,
+								'cashier_name'  => $user_name,
+								'opened_at'     => $opened_at,
+								'closed_at'     => $closed_at,
+								'opening_float' => $opening_float,
+								'cash_sales'    => 0.00,
+								'card_sales'    => 0.00,
+								'other_sales'   => 0.00,
+								'cash_in'       => 0.00,
+								'cash_out'      => 0.00,
+								'expected_cash' => $closing_balance,
+								'counted_cash'  => $closing_balance,
+								'difference'    => 0.00,
+								'orders_count'  => 0,
+								'status'        => $status,
+								'notes'         => '[VitePOS_Drawer_#' . $vtp_id . '] Migrated from VitePOS Cash Drawer session.',
 							),
-							array( '%d', '%s', '%s', '%s', '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%s', '%s' )
+							array( '%d', '%s', '%s', '%s', '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%f', '%d', '%s', '%s' )
 						);
 						$results['shifts_migrated']++;
 					}
@@ -476,4 +582,136 @@ class Omni_POS_Migrator {
 
 		return $list;
 	}
+
+	/**
+	 * Initialize 2-way real-time stock & field synchronization
+	 */
+	public static function init_sync_hooks() {
+		add_action( 'woocommerce_product_set_stock', array( __CLASS__, 'sync_wc_stock_to_vitepos' ) );
+		add_action( 'save_post_product', array( __CLASS__, 'sync_product_fields_twoway' ), 25, 2 );
+		add_action( 'save_post_product_variation', array( __CLASS__, 'sync_product_fields_twoway' ), 25, 2 );
+		add_action( 'updated_post_meta', array( __CLASS__, 'on_post_meta_updated' ), 25, 4 );
+		add_action( 'added_post_meta', array( __CLASS__, 'on_post_meta_updated' ), 25, 4 );
+	}
+
+	/**
+	 * When WooCommerce stock changes, keep VitePOS _vt_stocks updated
+	 */
+	public static function sync_wc_stock_to_vitepos( $product ) {
+		if ( ! is_object( $product ) ) {
+			return;
+		}
+		$pid = $product->get_id();
+		$qty = (int) $product->get_stock_quantity();
+		
+		$vt_stocks = get_post_meta( $pid, '_vt_stocks', true );
+		if ( is_array( $vt_stocks ) && ! empty( $vt_stocks ) ) {
+			// Set default outlet 1 or preserve multi-outlet
+			$first_key = array_key_first( $vt_stocks );
+			$vt_stocks[ $first_key ] = $qty;
+		} else {
+			$vt_stocks = array( 1 => $qty );
+		}
+		
+		remove_action( 'updated_post_meta', array( __CLASS__, 'on_post_meta_updated' ), 25 );
+		update_post_meta( $pid, '_vt_stocks', $vt_stocks );
+		add_action( 'updated_post_meta', array( __CLASS__, 'on_post_meta_updated' ), 25, 4 );
+	}
+
+	/**
+	 * Synchronize barcode, cost price, and stock 2-way on product save
+	 */
+	public static function sync_product_fields_twoway( $post_id, $post = null ) {
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
+		// 1. Barcode Sync
+		$barcode = get_post_meta( $post_id, '_barcode', true );
+		$vt_barcode = get_post_meta( $post_id, '_vt_barcode', true );
+		$vtp_barcode = get_post_meta( $post_id, '_vtp_barcode', true );
+
+		$final_barcode = ! empty( $barcode ) ? $barcode : ( ! empty( $vt_barcode ) ? $vt_barcode : $vtp_barcode );
+
+		if ( ! empty( $final_barcode ) ) {
+			update_post_meta( $post_id, '_barcode', $final_barcode );
+			update_post_meta( $post_id, '_omni_barcode', $final_barcode );
+			update_post_meta( $post_id, '_omni_pos_barcode', $final_barcode );
+			update_post_meta( $post_id, '_vt_barcode', $final_barcode );
+			update_post_meta( $post_id, '_vtp_barcode', $final_barcode );
+
+			$sku = get_post_meta( $post_id, '_sku', true );
+			if ( empty( $sku ) ) {
+				update_post_meta( $post_id, '_sku', $final_barcode );
+			}
+		}
+
+		// 2. Cost Price Sync
+		$cost = get_post_meta( $post_id, '_cost_price', true );
+		$vt_cost = get_post_meta( $post_id, '_vt_cost_price', true );
+		$vtp_cost = get_post_meta( $post_id, '_vtp_cost_price', true );
+
+		$final_cost = ( floatval( $cost ) > 0 ) ? floatval( $cost ) : ( floatval( $vt_cost ) > 0 ? floatval( $vt_cost ) : floatval( $vtp_cost ) );
+
+		if ( $final_cost > 0 ) {
+			update_post_meta( $post_id, '_cost_price', $final_cost );
+			update_post_meta( $post_id, '_omni_pos_cost_price', $final_cost );
+			update_post_meta( $post_id, '_purchase_price', $final_cost );
+			update_post_meta( $post_id, '_vt_cost_price', $final_cost );
+			update_post_meta( $post_id, '_vtp_cost_price', $final_cost );
+		}
+
+		// 3. Stock Sync (If _vt_stocks exists, sync to _stock)
+		$vt_stocks = get_post_meta( $post_id, '_vt_stocks', true );
+		if ( ! empty( $vt_stocks ) ) {
+			$vt_decoded = maybe_unserialize( $vt_stocks );
+			$total_qty = 0;
+			if ( is_array( $vt_decoded ) ) {
+				foreach ( $vt_decoded as $q ) {
+					$total_qty += intval( $q );
+				}
+			} elseif ( is_numeric( $vt_decoded ) ) {
+				$total_qty = intval( $vt_decoded );
+			}
+			$wc_stock = get_post_meta( $post_id, '_stock', true );
+			if ( $wc_stock === '' || $wc_stock === null ) {
+				update_post_meta( $post_id, '_stock', $total_qty );
+				update_post_meta( $post_id, '_manage_stock', 'yes' );
+				update_post_meta( $post_id, '_stock_status', $total_qty > 0 ? 'instock' : 'outofstock' );
+			}
+		}
+	}
+
+	/**
+	 * Catch individual meta updates for instant sync
+	 */
+	public static function on_post_meta_updated( $meta_id, $post_id, $meta_key, $meta_value ) {
+		static $is_syncing = false;
+		if ( $is_syncing ) {
+			return;
+		}
+
+		if ( in_array( $meta_key, array( '_barcode', '_vt_barcode', '_vtp_barcode' ), true ) && ! empty( $meta_value ) ) {
+			$is_syncing = true;
+			update_post_meta( $post_id, '_barcode', $meta_value );
+			update_post_meta( $post_id, '_omni_barcode', $meta_value );
+			update_post_meta( $post_id, '_omni_pos_barcode', $meta_value );
+			update_post_meta( $post_id, '_vt_barcode', $meta_value );
+			update_post_meta( $post_id, '_vtp_barcode', $meta_value );
+			$is_syncing = false;
+		} elseif ( in_array( $meta_key, array( '_cost_price', '_vt_cost_price', '_vtp_cost_price', '_omni_pos_cost_price' ), true ) && floatval( $meta_value ) > 0 ) {
+			$is_syncing = true;
+			$c = floatval( $meta_value );
+			update_post_meta( $post_id, '_cost_price', $c );
+			update_post_meta( $post_id, '_omni_pos_cost_price', $c );
+			update_post_meta( $post_id, '_purchase_price', $c );
+			update_post_meta( $post_id, '_vt_cost_price', $c );
+			update_post_meta( $post_id, '_vtp_cost_price', $c );
+			$is_syncing = false;
+		}
+	}
 }
+
+// Automatically bind 2-way sync hooks
+Omni_POS_Migrator::init_sync_hooks();
+

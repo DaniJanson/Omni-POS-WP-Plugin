@@ -30,6 +30,7 @@ interface AdminMigrationHubModalProps {
 interface MigrationStats {
   is_vitepos_active: boolean;
   is_vitepos_installed: boolean;
+  products_with_vtp_stocks: number;
   products_with_vtp_barcode: number;
   products_with_vtp_cost: number;
   total_products: number;
@@ -56,6 +57,7 @@ export const AdminMigrationHubModal: React.FC<AdminMigrationHubModalProps> = ({
   const [stats, setStats] = useState<MigrationStats | null>(null);
 
   // Options
+  const [migrateStocks, setMigrateStocks] = useState(true);
   const [migrateBarcodes, setMigrateBarcodes] = useState(true);
   const [migrateCostPrices, setMigrateCostPrices] = useState(true);
   const [migrateShifts, setMigrateShifts] = useState(true);
@@ -128,6 +130,7 @@ export const AdminMigrationHubModal: React.FC<AdminMigrationHubModalProps> = ({
           },
           body: JSON.stringify({
             options: {
+              migrate_stocks: migrateStocks,
               migrate_barcodes: migrateBarcodes,
               migrate_cost_prices: migrateCostPrices,
               migrate_shifts: migrateShifts,
@@ -276,7 +279,18 @@ export const AdminMigrationHubModal: React.FC<AdminMigrationHubModalProps> = ({
                 <span>მონაცემთა ბაზის სკანირება...</span>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-1">
+                  <div className="flex items-center justify-between text-slate-500">
+                    <span className="text-[10px] font-bold uppercase">მარაგები</span>
+                    <Building2 className="w-3.5 h-3.5 text-cyan-500" />
+                  </div>
+                  <div className="text-lg font-black text-slate-900 dark:text-white">
+                    {stats?.products_with_vtp_stocks || 0}
+                  </div>
+                  <div className="text-[10px] text-slate-400">VitePOS Stock Records</div>
+                </div>
+
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-1">
                   <div className="flex items-center justify-between text-slate-500">
                     <span className="text-[10px] font-bold uppercase">შტრიხკოდები</span>
@@ -310,9 +324,9 @@ export const AdminMigrationHubModal: React.FC<AdminMigrationHubModalProps> = ({
                   <div className="text-[10px] text-slate-400">Drawer Sessions / Shifts</div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-1">
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-1 col-span-2 md:col-span-1">
                   <div className="flex items-center justify-between text-slate-500">
-                    <span className="text-[10px] font-bold uppercase">თანხის მოძრაობები</span>
+                    <span className="text-[10px] font-bold uppercase">მოძრაობები</span>
                     <Layers className="w-3.5 h-3.5 text-amber-500" />
                   </div>
                   <div className="text-lg font-black text-slate-900 dark:text-white">
@@ -331,6 +345,19 @@ export const AdminMigrationHubModal: React.FC<AdminMigrationHubModalProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label className="flex items-center space-x-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-blue-500 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={migrateStocks}
+                  onChange={(e) => setMigrateStocks(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <div>
+                  <div className="font-bold text-xs text-slate-900 dark:text-white">მარაგების სინქრონიზაცია (Live Stocks)</div>
+                  <div className="text-[10px] text-slate-400">_vt_stocks ➔ WooCommerce _stock & status</div>
+                </div>
+              </label>
+
               <label className="flex items-center space-x-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-blue-500 transition-colors">
                 <input
                   type="checkbox"
