@@ -4,7 +4,7 @@ Tags: pos, point of sale, woocommerce pos, barcode scanner, receipt printer, the
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,8 +23,7 @@ Built with React 18 and client-side IndexedDB local memory, it delivers instant 
 * Complete Admin Hub (Sales, Suppliers, Stock, Reports, Customers, Settings).
 * Silent thermal receipt printing (ESC/POS) and cash drawer kick.
 * NiceLabel HTTP trigger bridge for SEWOO/Zebra/TSC thermal label printers.
-* 1-Click VitePOS to Omni POS migration engine with automated backups.
-* Built-in BPG DejaVu Sans typography and multilingual localization editor.
+* Integrated VitePOS ➔ WooCommerce Multi-Stock, Barcodes, and Cost Prices Overwrite Hub.
 
 == Installation ==
 
@@ -33,6 +32,11 @@ Built with React 18 and client-side IndexedDB local memory, it delivers instant 
 3. Access POS directly at `/omni_pos` or via the Omni POS menu in WP Admin.
 
 == Changelog ==
+
+= 1.2.9 =
+* Integrated 1-Click VitePOS Multi-Stock ➔ WooCommerce Stock Overwrite Migration Hub into Settings.
+* 2-Way real-time synchronization bridge for barcodes, live stocks, and cost prices.
+* Live migration diagnostics dashboard with safe snapshot rollback.
 
 = 1.2.8 =
 * Reorganized Settings Hub with integrated Migration and System Updates tabs.
